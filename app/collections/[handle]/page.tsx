@@ -3,7 +3,8 @@ import { Footer } from '@/components/layout/footer'
 import { CartPanel } from '@/components/cart/cart-panel'
 import { CollectionPageClient } from '@/components/collections/collection-page-client'
 import { CollectionHero } from '@/components/collections/collection-hero'
-import { getCollectionProducts } from '@/lib/shopify'
+import { getCollectionProducts, getNewArrivals } from '@/lib/shopify'
+import { resolvePricingCountryCode } from '@/lib/shopify/pricing-country'
 import { notFound } from 'next/navigation'
 
 const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -62,6 +63,7 @@ export default async function CollectionPage({
 }) {
   const { handle } = await params
   const resolvedHandle = handleRedirects[handle] || handle
+  const countryCode = await resolvePricingCountryCode()
   const meta = collectionMeta[resolvedHandle] || {
     title: resolvedHandle.replace(/-/g, ' ').toUpperCase(),
     subtitle: 'Collection',
@@ -69,9 +71,21 @@ export default async function CollectionPage({
     image: '/images/editorial-break.jpg',
   }
 
-  let products: Awaited<ReturnType<typeof getCollectionProducts>> = []
+  let products = []
   try {
-    products = await getCollectionProducts({ collection: resolvedHandle, limit: 24 })
+    if (resolvedHandle === 'new-arrivals') {
+      products = await getNewArrivals({
+        first: 24,
+        countryCode,
+        availableOnly: true,
+      })
+    } else {
+      products = await getCollectionProducts({
+        collection: resolvedHandle,
+        limit: 24,
+        countryCode,
+      })
+    }
   } catch (error) {
     console.error(`[Collection] Failed to fetch "${resolvedHandle}":`, error)
     if (!IS_DEMO) {

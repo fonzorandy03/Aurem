@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { drawer, overlayFade, cartItem, cartList, ease } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { buildLoginRedirect } from '@/lib/auth/redirect'
 
 // ── Stock alert modal ─────────────────────────────────────────────────────────
 type StockAlert = { available: number | null }
@@ -119,7 +120,11 @@ export function CartPanel() {
       toast.error('Checkout unavailable', { description: 'Please try again later' })
       return
     }
-    if (!isAuthenticated || !cart?.id) {
+    if (!isAuthenticated) {
+      window.location.href = buildLoginRedirect('/checkout')
+      return
+    }
+    if (!cart?.id) {
       window.location.href = cart.checkoutUrl
       return
     }

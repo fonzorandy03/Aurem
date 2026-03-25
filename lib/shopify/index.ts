@@ -5,6 +5,7 @@ import {
   ShopifyCollection,
   ShopifyProduct,
 } from './types'
+import { getCountryByCode, normalizeCountryCode } from '@/lib/customer-market'
 
 import { parseShopifyDomain } from './parse-shopify-domain'
 import { DEFAULT_PAGE_SIZE, DEFAULT_SORT_KEY } from './constants'
@@ -62,6 +63,28 @@ async function shopifyFetch<T>({
   }
 }
 
+function getPricingCountryContext(countryCode?: string): {
+  variableDefinition: string
+  directive: string
+  variables: Record<string, string>
+} {
+  const normalized = normalizeCountryCode(countryCode ?? '')
+
+  if (!normalized || !getCountryByCode(normalized)) {
+    return {
+      variableDefinition: '',
+      directive: '',
+      variables: {},
+    }
+  }
+
+  return {
+    variableDefinition: ', $country: CountryCode!',
+    directive: ' @inContext(country: $country)',
+    variables: { country: normalized },
+  }
+}
+
 // Normalize raw Shopify product (variants come as edges from GraphQL)
 type RawShopifyProduct = Omit<ShopifyProduct, 'variants'> & {
   variants: { edges: Array<{ node: ShopifyProduct['variants'][number] }> } | ShopifyProduct['variants']
@@ -80,14 +103,18 @@ export async function getProducts({
   sortKey = DEFAULT_SORT_KEY,
   reverse = false,
   query: searchQuery,
+  countryCode,
 }: {
   first?: number
   sortKey?: ProductSortKey
   reverse?: boolean
   query?: string
+  countryCode?: string
 }): Promise<ShopifyProduct[]> {
+  const pricingCountry = getPricingCountryContext(countryCode)
+
   const query = /* gql */ `
-    query getProducts($first: Int!, $sortKey: ProductSortKeys!, $reverse: Boolean, $query: String) {
+    query getProducts($first: Int!, $sortKey: ProductSortKeys!, $reverse: Boolean, $query: String${pricingCountry.variableDefinition})${pricingCountry.directive} {
       products(first: $first, sortKey: $sortKey, reverse: $reverse, query: $query) {
         edges {
           node {
@@ -152,18 +179,63 @@ export async function getProducts({
     }
   }>({
     query,
-    variables: { first, sortKey, reverse, query: searchQuery },
+    variables: {
+      first,
+      sortKey,
+      reverse,
+      query: searchQuery,
+      ...pricingCountry.variables,
+    },
   })
 
   return data.products.edges.map((edge) => normalizeProduct(edge.node))
 }
 
+// Canonical source for New Arrivals across the site.
+export async function getNewArrivals({
+  first = 6,
+  countryCode,
+  excludeHandle,
+  excludeProductId,
+  availableOnly = true,
+}: {
+  first?: number
+  countryCode?: string
+  excludeHandle?: string
+  excludeProductId?: string
+  availableOnly?: boolean
+}): Promise<ShopifyProduct[]> {
+  const buffer = Math.max(4, first)
+  const latest = await getProducts({
+    first: first + buffer,
+    sortKey: 'CREATED_AT',
+    reverse: true,
+    countryCode,
+  })
+
+  const seenHandles = new Set<string>()
+
+  return latest
+    .filter((product) => {
+      if (excludeHandle && product.handle === excludeHandle) return false
+      if (excludeProductId && product.id === excludeProductId) return false
+      if (availableOnly && !product.availableForSale) return false
+      if (seenHandles.has(product.handle)) return false
+      seenHandles.add(product.handle)
+      return true
+    })
+    .slice(0, first)
+}
+
 // Get single product by handle
 export async function getProduct(
   handle: string,
+  countryCode?: string,
 ): Promise<ShopifyProduct | null> {
+  const pricingCountry = getPricingCountryContext(countryCode)
+
   const query = /* gql */ `
-    query getProduct($handle: String!) {
+    query getProduct($handle: String!${pricingCountry.variableDefinition})${pricingCountry.directive} {
       product(handle: $handle) {
         id
         title
@@ -225,7 +297,7 @@ export async function getProduct(
     product: RawShopifyProduct | null
   }>({
     query,
-    variables: { handle },
+    variables: { handle, ...pricingCountry.variables },
   })
 
   return data.product ? normalizeProduct(data.product) : null
@@ -271,15 +343,19 @@ export async function getCollectionProducts({
   sortKey = 'CREATED',
   query: searchQuery,
   reverse = false,
+  countryCode,
 }: {
   collection: string
   limit?: number
   sortKey?: ProductCollectionSortKey
   query?: string
   reverse?: boolean
+  countryCode?: string
 }): Promise<ShopifyProduct[]> {
+  const pricingCountry = getPricingCountryContext(countryCode)
+
   const query = /* gql */ `
-    query getCollectionProducts($handle: String!, $first: Int!, $sortKey: ProductCollectionSortKeys!, $reverse: Boolean) {
+    query getCollectionProducts($handle: String!, $first: Int!, $sortKey: ProductCollectionSortKeys!, $reverse: Boolean${pricingCountry.variableDefinition})${pricingCountry.directive} {
       collection(handle: $handle) {
         products(first: $first, sortKey: $sortKey, reverse: $reverse) {
           edges {
@@ -357,6 +433,7 @@ export async function getCollectionProducts({
       sortKey,
       query: searchQuery,
       reverse,
+      ...pricingCountry.variables,
     },
   })
 

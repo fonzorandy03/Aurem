@@ -7,6 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
+import {
+  consumeRateLimit,
+  getClientIp,
+  isValidEmail,
+  normalizeEmail,
+  tooManyRequestsResponse,
+} from '@/lib/security/request-guard'
 
 const RECOVER_MUTATION = /* gql */ `
   mutation CustomerRecover($email: String!) {
@@ -21,36 +28,44 @@ const RECOVER_MUTATION = /* gql */ `
 `
 
 export async function POST(req: NextRequest) {
+  const genericOk = NextResponse.json({
+    ok: true,
+    message: 'Se l\'indirizzo è registrato riceverai un link di reset.',
+  })
+
   try {
     const { email } = await req.json()
+    const normalizedEmail = normalizeEmail(email)
+    const ip = getClientIp(req)
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email obbligatoria.' },
-        { status: 400 },
-      )
+    const limit = consumeRateLimit({
+      bucket: 'auth-reset',
+      key: `${ip}:${normalizedEmail || 'unknown-email'}`,
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+    })
+
+    if (!limit.ok) {
+      return tooManyRequestsResponse(limit.retryAfterSeconds)
+    }
+
+    // Always return a generic response to avoid account enumeration.
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
+      return genericOk
     }
 
     const { data } = await storefrontFetch<any>({
       query: RECOVER_MUTATION,
-      variables: { email },
+      variables: { email: normalizedEmail },
     })
 
     const errors = data.customerRecover?.customerUserErrors
     if (errors?.length) {
-      return NextResponse.json({ error: errors[0].message }, { status: 422 })
+      return genericOk
     }
 
-    // Risposta generica per sicurezza (non rivelare se l'email esiste)
-    return NextResponse.json({
-      ok: true,
-      message: 'Se l\'indirizzo è registrato riceverai un link di reset.',
-    })
-  } catch (err) {
-    console.error('[auth/reset]', err)
-    return NextResponse.json(
-      { error: 'Errore interno del server.' },
-      { status: 500 },
-    )
+    return genericOk
+  } catch {
+    return genericOk
   }
 }

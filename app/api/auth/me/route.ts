@@ -9,8 +9,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getCountryByCode, normalizeCountryCode } from '@/lib/customer-market'
+import { getCustomerMarketAssignment } from '@/lib/shopify/customer-registration'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
-import { CUSTOMER_TOKEN_COOKIE } from '@/lib/auth/constants'
+import {
+  COUNTRY_COOKIE_MAX_AGE,
+  CUSTOMER_COUNTRY_COOKIE,
+  CUSTOMER_TOKEN_COOKIE,
+} from '@/lib/auth/constants'
 
 /** Lightweight profile query — used on every page load */
 const CUSTOMER_PROFILE_QUERY = /* gql */ `
@@ -30,6 +36,7 @@ const CUSTOMER_PROFILE_QUERY = /* gql */ `
         city
         province
         country
+        countryCodeV2
         zip
         phone
       }
@@ -147,6 +154,7 @@ const CUSTOMER_WITH_ORDERS_QUERY = /* gql */ `
         city
         province
         country
+        countryCodeV2
         zip
         phone
       }
@@ -177,12 +185,24 @@ export async function GET(req: NextRequest) {
     if (!raw) {
       const res = NextResponse.json({ customer: null }, { status: 200 })
       res.cookies.delete(CUSTOMER_TOKEN_COOKIE)
+      res.cookies.delete(CUSTOMER_COUNTRY_COOKIE)
       return res
     }
 
-    // Normalize GraphQL edges → flat arrays (only if orders are included)
+    // Keep default profile path fast; resolve market assignment only on account-heavy fetches.
+    let marketAssignment = null
+
+    if (includeOrders) {
+      try {
+        marketAssignment = await getCustomerMarketAssignment(raw.id)
+      } catch (marketError) {
+        console.error('[auth/me][market-assignment]', marketError)
+      }
+    }
+
     const customer = {
       ...raw,
+      marketAssignment,
       orders: raw.orders
         ? (raw.orders.edges ?? []).map((e: any) => ({
             ...e.node,
@@ -193,7 +213,23 @@ export async function GET(req: NextRequest) {
         : [],
     }
 
-    return NextResponse.json({ customer })
+    const res = NextResponse.json({ customer })
+
+    const addressCountryCode = normalizeCountryCode(
+      String(raw?.defaultAddress?.countryCodeV2 ?? ''),
+    )
+
+    if (addressCountryCode && getCountryByCode(addressCountryCode)) {
+      res.cookies.set(CUSTOMER_COUNTRY_COOKIE, addressCountryCode, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: COUNTRY_COOKIE_MAX_AGE,
+      })
+    }
+
+    return res
   } catch (err) {
     console.error('[auth/me]', err)
     return NextResponse.json({ customer: null }, { status: 200 })

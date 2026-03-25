@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useCart } from '@/components/cart/cart-context'
 import { useAuth } from '@/components/account/auth-context'
 import { motion, AnimatePresence } from 'framer-motion'
 import { fade, menuSlideIn, staggerItem } from '@/lib/motion'
 import { SearchBar } from '@/components/layout/search-bar'
+import { buildLoginRedirect } from '@/lib/auth/redirect'
 
 const easing: [number, number, number, number] = [0.16, 1, 0.3, 1]
 
@@ -19,8 +20,8 @@ interface NavCategory {
 
 const categories: NavCategory[] = [
   { name: 'Coats', href: '/collections/coats' },
-  { name: 'Bags', href: '/collections/bags' },
-  { name: 'Jewelry', href: '/collections/jewelry' },
+  { name: 'Bags', href: '/bags' },
+  { name: 'Jewelry', href: '/jewelry' },
 ]
 
 function NavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) {
@@ -48,12 +49,18 @@ function NavButton({ onClick, children, label }: { onClick: () => void; children
 }
 
 export function Header() {
+  const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [headerVisible, setHeaderVisible] = useState(true)
   const { openCart, itemCount } = useCart()
   const { customer, isAuthenticated } = useAuth()
+
+  const handleMyOrdersNavigation = () => {
+    setMenuOpen(false)
+    router.push(isAuthenticated ? '/my-orders' : buildLoginRedirect('/my-orders'))
+  }
 
   useEffect(() => {
     if (menuOpen) {
@@ -136,7 +143,13 @@ export function Header() {
           style={{ pointerEvents: headerVisible ? 'auto' : 'none' }}
         >
           <button
-            onClick={openCart}
+            onClick={() => {
+              if (!isAuthenticated) {
+                router.push(buildLoginRedirect('/cart'))
+                return
+              }
+              openCart()
+            }}
             className="flex items-center gap-2 text-[10px] tracking-[0.14em] uppercase text-foreground/50 hover:text-foreground transition-colors duration-200 font-sans group"
             aria-label="Cart"
           >
@@ -163,6 +176,7 @@ export function Header() {
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
         pathname={pathname}
+        onMyOrdersClick={handleMyOrdersNavigation}
       />
     </>
   )
@@ -176,10 +190,12 @@ function FullscreenMenu({
   menuOpen,
   setMenuOpen,
   pathname,
+  onMyOrdersClick,
 }: {
   menuOpen: boolean
   setMenuOpen: (v: boolean) => void
   pathname: string
+  onMyOrdersClick: () => void
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [accessoriOpen, setAccessoriOpen] = useState(false)
@@ -379,26 +395,18 @@ function FullscreenMenu({
               >
                 Home
               </Link>
-              <Link
-                href="/account/orders"
-                onClick={() => setMenuOpen(false)}
+              <button
+                onClick={onMyOrdersClick}
                 className="text-[10px] tracking-[0.18em] uppercase text-foreground/35 hover:text-foreground transition-colors duration-200 link-underline"
               >
                 My Orders
-              </Link>
+              </button>
               <Link
                 href="/about"
                 onClick={() => setMenuOpen(false)}
                 className="text-[10px] tracking-[0.18em] uppercase text-foreground/35 hover:text-foreground transition-colors duration-200 link-underline"
               >
                 Our Story
-              </Link>
-              <Link
-                href="/payments"
-                onClick={() => setMenuOpen(false)}
-                className="text-[10px] tracking-[0.18em] uppercase text-foreground/35 hover:text-foreground transition-colors duration-200 link-underline"
-              >
-                Payments
               </Link>
             </motion.div>
           </div>

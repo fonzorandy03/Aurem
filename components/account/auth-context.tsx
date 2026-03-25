@@ -18,6 +18,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
+import { sanitizeNextPath } from '@/lib/auth/redirect'
 
 // ─── Tipi ────────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,12 @@ export interface CustomerProfile {
   createdAt: string
   orders: ShopifyOrder[]
   defaultAddress: ShopifyAddress | null
+  marketAssignment?: {
+    market: 'EU' | 'INTERNATIONAL'
+    countryCode: string
+    tag: string
+    source: 'metafield+tag' | 'tag'
+  } | null
 }
 
 export interface LoginInput {
@@ -104,9 +111,15 @@ export interface LoginInput {
 export interface RegisterInput {
   email: string
   password: string
-  firstName?: string
-  lastName?: string
+  firstName: string
+  lastName: string
   acceptsMarketing?: boolean
+  countryCode: string
+  address1: string
+  address2?: string
+  city: string
+  postalCode: string
+  province?: string
 }
 
 interface AuthState {
@@ -213,6 +226,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh()
   }, [refresh])
 
+  const getPostAuthRedirectPath = useCallback(() => {
+    if (typeof window === 'undefined') return '/account'
+    const nextParam = new URLSearchParams(window.location.search).get('next')
+    const safeNext = sanitizeNextPath(nextParam)
+    return safeNext ?? '/account'
+  }, [])
+
   // ─── Login ──────────────────────────────────────────────────────────────
 
   const login = useCallback(
@@ -231,9 +251,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await refresh()
       await associateCartWithCustomer()
-      router.push('/account')
+      router.push(getPostAuthRedirectPath())
     },
-    [refresh, router],
+    [getPostAuthRedirectPath, refresh, router],
   )
 
   // ─── Register ───────────────────────────────────────────────────────────
@@ -254,9 +274,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await refresh()
       await associateCartWithCustomer()
-      router.push('/account')
+      router.push(getPostAuthRedirectPath())
     },
-    [refresh, router],
+    [getPostAuthRedirectPath, refresh, router],
   )
 
   // ─── Reset password ─────────────────────────────────────────────────────

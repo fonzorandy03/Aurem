@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
-import { CUSTOMER_TOKEN_COOKIE } from '@/lib/auth/constants'
+import { CUSTOMER_COUNTRY_COOKIE, CUSTOMER_TOKEN_COOKIE } from '@/lib/auth/constants'
 
 const DELETE_TOKEN_MUTATION = /* gql */ `
   mutation CustomerAccessTokenDelete($customerAccessToken: String!) {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
 
     const res = NextResponse.json({ ok: true })
     res.cookies.delete(CUSTOMER_TOKEN_COOKIE)
+    res.cookies.delete(CUSTOMER_COUNTRY_COOKIE)
     return res
   } catch (err) {
     console.error('[auth/logout]', err)

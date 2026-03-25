@@ -1,11 +1,17 @@
 import { HomeClient } from '@/components/home/home-client'
-import { getProducts } from '@/lib/shopify'
+import { getNewArrivals } from '@/lib/shopify'
+import { resolvePricingCountryCode } from '@/lib/shopify/pricing-country'
 import type { ShopifyProduct } from '@/lib/shopify/types'
 
 export default async function HomePage() {
   let products: ShopifyProduct[] = []
+  const countryCode = await resolvePricingCountryCode()
+
   try {
-    products = await getProducts({ first: 6, sortKey: 'CREATED_AT', reverse: true })
+    products = await getNewArrivals({
+      first: 6,
+      countryCode,
+    })
   } catch {
     // fallback to demo if Shopify is unavailable
   }

@@ -11,9 +11,25 @@
  * Integrazione: Shopify Storefront API via AuthContext
  */
 
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/components/account/auth-context'
+import {
+  COUNTRY_OPTIONS,
+  getCountryName,
+  isPostalCodeRequired,
+  isProvinceRequired,
+  validateCustomerRegistrationInput,
+} from '@/lib/customer-market'
+import {
+  filterOptions,
+  findSubdivisionCode,
+  getCities,
+  getPostalLabel,
+  getRegionLabel,
+  getSubdivisions,
+  suggestPostalCode,
+} from '@/lib/address-intl'
 import { ease } from '@/lib/motion'
 
 type Mode = 'login' | 'register' | 'reset'
@@ -63,12 +79,13 @@ const COPY = {
 
 function Field({
   id, label, type = 'text', value, onChange,
-  placeholder, required = false, autoComplete, minLength,
+  placeholder, required = false, autoComplete, minLength, onBlur,
 }: {
   id: string; label: string; type?: string
   value: string; onChange: (v: string) => void
   placeholder?: string; required?: boolean
   autoComplete?: string; minLength?: number
+  onBlur?: () => void
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -78,6 +95,7 @@ function Field({
       <input
         id={id} type={type} value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder} required={required}
         autoComplete={autoComplete} minLength={minLength}
         className="w-full bg-transparent border border-border px-4 py-3 text-[11px] tracking-industrial outline-none focus:border-foreground transition-colors duration-200 placeholder:text-muted-foreground"
@@ -86,20 +104,258 @@ function Field({
   )
 }
 
+function SearchableField({
+  id,
+  label,
+  value,
+  onChange,
+  onSelect,
+  options,
+  placeholder,
+  required = false,
+  autoComplete,
+  disabled = false,
+  onBlur,
+  hint,
+  noResultsLabel,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  onSelect: (value: string) => void
+  options: Array<{ code: string; name: string }>
+  placeholder: string
+  required?: boolean
+  autoComplete?: string
+  disabled?: boolean
+  onBlur?: () => void
+  hint?: string
+  noResultsLabel?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!containerRef.current) return
+      if (!containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [])
+
+  const hasOptions = options.length > 0
+  const showDropdown = isOpen && !disabled
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-[10px] tracking-wide-industrial uppercase font-bold text-foreground">
+        {label}
+      </label>
+
+      <div ref={containerRef} className="relative">
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value)
+            if (!disabled) setIsOpen(true)
+          }}
+          onFocus={() => {
+            if (!disabled) setIsOpen(true)
+          }}
+          onBlur={() => {
+            onBlur?.()
+          }}
+          placeholder={placeholder}
+          required={required}
+          autoComplete={autoComplete}
+          disabled={disabled}
+          className="w-full bg-transparent border border-border px-4 py-3 text-[11px] tracking-industrial outline-none focus:border-foreground transition-colors duration-200 placeholder:text-muted-foreground disabled:opacity-60"
+        />
+
+        {showDropdown && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 border border-border bg-background max-h-52 overflow-y-auto">
+            {hasOptions ? (
+              options.map((option) => (
+                <button
+                  key={`${id}-${option.code}-${option.name}`}
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault()
+                    onSelect(option.name)
+                    setIsOpen(false)
+                  }}
+                  className="w-full text-left px-4 py-3 text-[11px] tracking-industrial hover:bg-foreground/5 transition-colors duration-150"
+                >
+                  {option.name}
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-3 text-[10px] tracking-industrial text-muted-foreground">
+                {noResultsLabel ?? 'No matches found'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {hint && (
+        <span className="text-[10px] tracking-industrial text-muted-foreground">
+          {hint}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function SelectField({
+  id,
+  label,
+  value,
+  onChange,
+  required = false,
+  placeholder,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  required?: boolean
+  placeholder: string
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-[10px] tracking-wide-industrial uppercase font-bold text-foreground">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required={required}
+        className="w-full bg-transparent border border-border px-4 py-3 text-[11px] tracking-industrial outline-none focus:border-foreground transition-colors duration-200"
+      >
+        <option value="" className="bg-background text-muted-foreground">
+          {placeholder}
+        </option>
+        {COUNTRY_OPTIONS.map((country) => (
+          <option key={country.code} value={country.code} className="bg-background text-foreground">
+            {country.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 // ─── Componente principale ────────────────────────────────────────────────────
 
 export function LoginForm() {
   const { login, register, resetPassword } = useAuth()
+  const postalLookupAbortRef = useRef<AbortController | null>(null)
 
   const [mode, setMode]             = useState<Mode>('login')
   const [email, setEmail]           = useState('')
   const [password, setPassword]     = useState('')
   const [firstName, setFirstName]   = useState('')
   const [lastName, setLastName]     = useState('')
+  const [countryCode, setCountryCode] = useState('')
+  const [address1, setAddress1]     = useState('')
+  const [address2, setAddress2]     = useState('')
+  const [city, setCity]             = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [province, setProvince]     = useState('')
+  const [autoPostalCode, setAutoPostalCode] = useState<string | null>(null)
   const [newsletter, setNewsletter] = useState(false)
   const [isLoading, setIsLoading]   = useState(false)
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState('')
+
+  const subdivisions = useMemo(() => getSubdivisions(countryCode), [countryCode])
+  const filteredSubdivisions = useMemo(
+    () => filterOptions(subdivisions, province),
+    [subdivisions, province],
+  )
+
+  const selectedSubdivisionCode = useMemo(
+    () => findSubdivisionCode(countryCode, province),
+    [countryCode, province],
+  )
+
+  const countryHasSubdivisionData = subdivisions.length > 0
+  const canSearchCity = Boolean(
+    countryCode && (!countryHasSubdivisionData || province.trim().length > 0),
+  )
+
+  const cities = useMemo(
+    () => getCities(countryCode, selectedSubdivisionCode),
+    [countryCode, selectedSubdivisionCode],
+  )
+
+  const filteredCities = useMemo(
+    () => filterOptions(cities, city),
+    [cities, city],
+  )
+
+  const regionLabel = useMemo(() => getRegionLabel(countryCode), [countryCode])
+  const postalLabel = useMemo(() => getPostalLabel(countryCode), [countryCode])
+
+  useEffect(() => {
+    setProvince('')
+    setCity('')
+    setPostalCode('')
+    setAutoPostalCode(null)
+  }, [countryCode])
+
+  const onProvinceChange = useCallback((nextProvince: string) => {
+    setProvince(nextProvince)
+    setCity('')
+    setPostalCode('')
+    setAutoPostalCode(null)
+  }, [])
+
+  const tryAutofillPostalCode = useCallback(async () => {
+    const countryName = getCountryName(countryCode)
+    const cityValue = city.trim()
+
+    if (!countryName || !cityValue) return
+
+    postalLookupAbortRef.current?.abort()
+    const controller = new AbortController()
+    postalLookupAbortRef.current = controller
+
+    try {
+      const suggested = await suggestPostalCode({
+        countryCode,
+        countryName,
+        city: cityValue,
+        region: province,
+        signal: controller.signal,
+      })
+
+      if (!suggested) return
+
+      const current = postalCode.trim()
+      if (!current || (autoPostalCode && current === autoPostalCode)) {
+        setPostalCode(suggested)
+        setAutoPostalCode(suggested)
+      }
+    } catch {
+      // Keep manual postal code workflow when lookup fails.
+    }
+  }, [autoPostalCode, city, countryCode, postalCode, province])
+
+  useEffect(() => {
+    return () => {
+      postalLookupAbortRef.current?.abort()
+    }
+  }, [])
 
   const switchMode = (next: Mode) => { setMode(next); setError(''); setSuccess('') }
 
@@ -112,7 +368,25 @@ export function LoginForm() {
       if (mode === 'login') {
         await login({ email, password })
       } else if (mode === 'register') {
-        await register({ email, password, firstName, lastName, acceptsMarketing: newsletter })
+        const validation = validateCustomerRegistrationInput({
+          email,
+          password,
+          firstName,
+          lastName,
+          acceptsMarketing: newsletter,
+          countryCode,
+          address1,
+          address2,
+          city,
+          postalCode,
+          province,
+        })
+
+        if (validation.error || !validation.data) {
+          throw new Error(validation.error ?? 'Registration data is invalid.')
+        }
+
+        await register(validation.data)
       } else {
         await resetPassword(email)
         setSuccess('Email sent. Please check your inbox.')
@@ -171,10 +445,109 @@ export function LoginForm() {
             >
               {/* Campi nome — solo registrazione */}
               {mode === 'register' && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Field id="firstName" label="First Name" value={firstName} onChange={setFirstName} placeholder="Marco" required autoComplete="given-name" />
                   <Field id="lastName"  label="Last Name"  value={lastName}  onChange={setLastName}  placeholder="Rossi" required autoComplete="family-name" />
                 </div>
+              )}
+
+              {mode === 'register' && (
+                <SelectField
+                  id="countryCode"
+                  label="Shipping Country"
+                  value={countryCode}
+                  onChange={setCountryCode}
+                  required
+                  placeholder="Select country"
+                />
+              )}
+
+              {mode === 'register' && (
+                <SearchableField
+                  id="province"
+                  label={regionLabel}
+                  value={province}
+                  onChange={onProvinceChange}
+                  onSelect={onProvinceChange}
+                  options={filteredSubdivisions}
+                  placeholder={`Enter ${regionLabel.toLowerCase()}`}
+                  required={isProvinceRequired(countryCode)}
+                  autoComplete="address-level1"
+                  disabled={!countryCode}
+                  hint={!countryCode
+                    ? 'Select country first'
+                    : countryHasSubdivisionData
+                      ? undefined
+                      : `No predefined ${regionLabel.toLowerCase()} list for this country. Manual entry is allowed.`}
+                  noResultsLabel={`No ${regionLabel.toLowerCase()} found`}
+                />
+              )}
+
+              {mode === 'register' && (
+                <SearchableField
+                  id="city"
+                  label="City"
+                  value={city}
+                  onChange={setCity}
+                  onSelect={(selectedCity) => {
+                    setCity(selectedCity)
+                    void tryAutofillPostalCode()
+                  }}
+                  options={filteredCities}
+                  placeholder="Enter city"
+                  required
+                  autoComplete="address-level2"
+                  disabled={!canSearchCity}
+                  onBlur={() => {
+                    void tryAutofillPostalCode()
+                  }}
+                  hint={!countryCode
+                    ? 'Select country first'
+                    : !canSearchCity
+                      ? `Select ${regionLabel.toLowerCase()} first`
+                      : undefined}
+                  noResultsLabel="No city found"
+                />
+              )}
+
+              {mode === 'register' && (
+                <Field
+                  id="postalCode"
+                  label={postalLabel}
+                  value={postalCode}
+                  onChange={(value) => {
+                    setPostalCode(value)
+                    if (autoPostalCode && value !== autoPostalCode) {
+                      setAutoPostalCode(null)
+                    }
+                  }}
+                  placeholder="Enter postal code"
+                  required={isPostalCodeRequired(countryCode)}
+                  autoComplete="postal-code"
+                />
+              )}
+
+              {mode === 'register' && (
+                <Field
+                  id="address1"
+                  label="Address Line 1"
+                  value={address1}
+                  onChange={setAddress1}
+                  placeholder="Street address"
+                  required
+                  autoComplete="address-line1"
+                />
+              )}
+
+              {mode === 'register' && (
+                <Field
+                  id="address2"
+                  label="Address Line 2"
+                  value={address2}
+                  onChange={setAddress2}
+                  placeholder="Apartment, suite, company"
+                  autoComplete="address-line2"
+                />
               )}
 
               <Field

@@ -2,13 +2,15 @@
 
 import { useState, useCallback } from 'react'
 import Image from 'next/image'
-import { ChevronDown, ChevronLeft, ChevronRight, Truck, RotateCcw } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { fadeUp } from '@/lib/motion'
 import { useCart } from '@/components/cart/cart-context'
+import { useAuth } from '@/components/account/auth-context'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { ShopifyProduct } from '@/lib/shopify/types'
+import { buildLoginRedirect } from '@/lib/auth/redirect'
 
 interface DemoProduct {
   title: string
@@ -29,11 +31,11 @@ const UNAVAILABLE_SIZES = ['34', '44']
 
 export function ProductDetail({ shopifyProduct, demo }: ProductDetailProps) {
   const { addItem, cart, isLoading: cartLoading } = useCart()
+  const { isAuthenticated } = useAuth()
   const [currentImage, setCurrentImage] = useState(0)
   const [isBuyingNow, setIsBuyingNow] = useState(false)
   const [descOpen, setDescOpen] = useState(true)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [shippingOpen, setShippingOpen] = useState(false)
   const [imgLoaded, setImgLoaded] = useState(false)
 
   const onImgLoad = useCallback(() => setImgLoaded(true), [])
@@ -111,6 +113,14 @@ export function ProductDetail({ shopifyProduct, demo }: ProductDetailProps) {
   }
 
   const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      const nextPath = typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/'
+      window.location.href = buildLoginRedirect(nextPath)
+      return
+    }
+
     if (!shopifyProduct || shopifyProduct.variants.length === 0) {
       toast('Added to cart', { description: title })
       return
@@ -462,38 +472,6 @@ export function ProductDetail({ shopifyProduct, demo }: ProductDetailProps) {
               )
             })()}
 
-            {/* Shipping & Returns Accordion */}
-            <div className="border-t border-border">
-              <button
-                onClick={() => setShippingOpen(!shippingOpen)}
-                className="flex items-center justify-between w-full py-4"
-              >
-                <span className="text-xs font-bold tracking-wide-industrial uppercase">Shipping &amp; Returns</span>
-                <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', shippingOpen && 'rotate-180')} />
-              </button>
-              {shippingOpen && (
-                <div className="pb-4 flex flex-col gap-4">
-                  <div className="flex items-start gap-3">
-                    <Truck className="h-4 w-4 text-foreground/40 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold tracking-industrial">Free Shipping</p>
-                      <p className="text-xs text-muted-foreground tracking-industrial mt-1 leading-relaxed">
-                        Free shipping on orders over €200. Delivery in 3–5 business days within Italy.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <RotateCcw className="h-4 w-4 text-foreground/40 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold tracking-industrial">Free Returns</p>
-                      <p className="text-xs text-muted-foreground tracking-industrial mt-1 leading-relaxed">
-                        Free returns within 30 days of delivery. Items must be returned in original condition.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </motion.div>

@@ -20,6 +20,7 @@ const STOREFRONT_TOKEN =
   ''
 
 const API_URL = `https://${STORE_DOMAIN}/api/2025-07/graphql.json`
+const STOREFRONT_TIMEOUT_MS = 12_000
 
 export async function storefrontFetch<T>({
   query,
@@ -28,30 +29,38 @@ export async function storefrontFetch<T>({
   query: string
   variables?: Record<string, unknown>
 }): Promise<{ data: T }> {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN,
-    },
-    body: JSON.stringify({ query, variables }),
-    cache: 'no-store',
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), STOREFRONT_TIMEOUT_MS)
 
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(
-      `Shopify Storefront API error ${res.status}: ${body}`,
-    )
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN,
+      },
+      body: JSON.stringify({ query, variables }),
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(
+        `Shopify Storefront API error ${res.status}: ${body}`,
+      )
+    }
+
+    const json = await res.json()
+
+    if (json.errors?.length) {
+      throw new Error(
+        `Shopify Storefront GraphQL errors: ${JSON.stringify(json.errors)}`,
+      )
+    }
+
+    return { data: json.data }
+  } finally {
+    clearTimeout(timeoutId)
   }
-
-  const json = await res.json()
-
-  if (json.errors?.length) {
-    throw new Error(
-      `Shopify Storefront GraphQL errors: ${JSON.stringify(json.errors)}`,
-    )
-  }
-
-  return { data: json.data }
 }

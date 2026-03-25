@@ -17,8 +17,11 @@ import { ShopifyAdminError } from './errors'
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN
-const ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN
+const ACCESS_TOKEN =
+  process.env.SHOPIFY_ADMIN_ACCESS_TOKEN ??
+  process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN
 const API_VERSION = process.env.SHOPIFY_API_VERSION ?? '2025-07'
+const ADMIN_FETCH_TIMEOUT_MS = 8_000
 
 function getAdminApiUrl(): string {
   if (!STORE_DOMAIN || !ACCESS_TOKEN) {
@@ -74,6 +77,9 @@ export async function adminFetch<T>(
       variables,
     })
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), ADMIN_FETCH_TIMEOUT_MS)
+
     const response = await fetch(getAdminApiUrl(), {
       method: 'POST',
       headers: {
@@ -84,7 +90,8 @@ export async function adminFetch<T>(
       body: JSON.stringify({ query, variables }),
       // SSR: no-store for mutations, revalidate for reads (caller decides)
       cache: 'no-store',
-    })
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId))
 
     const elapsed = Date.now() - start
 

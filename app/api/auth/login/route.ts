@@ -13,6 +13,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
 import { CUSTOMER_TOKEN_COOKIE, COOKIE_MAX_AGE } from '@/lib/auth/constants'
+import {
+  consumeRateLimit,
+  getClientIp,
+  normalizeEmail,
+  tooManyRequestsResponse,
+} from '@/lib/security/request-guard'
 
 const LOGIN_MUTATION = /* gql */ `
   mutation CustomerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
@@ -33,8 +39,21 @@ const LOGIN_MUTATION = /* gql */ `
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json()
+    const normalizedEmail = normalizeEmail(email)
 
-    if (!email || !password) {
+    const ip = getClientIp(req)
+    const limit = consumeRateLimit({
+      bucket: 'auth-login',
+      key: `${ip}:${normalizedEmail || 'unknown-email'}`,
+      limit: 8,
+      windowMs: 10 * 60 * 1000,
+    })
+
+    if (!limit.ok) {
+      return tooManyRequestsResponse(limit.retryAfterSeconds)
+    }
+
+    if (!normalizedEmail || !password) {
       return NextResponse.json(
         { error: 'Email e password sono obbligatori.' },
         { status: 400 },
@@ -43,17 +62,14 @@ export async function POST(req: NextRequest) {
 
     const { data } = await storefrontFetch<any>({
       query: LOGIN_MUTATION,
-      variables: { input: { email, password } },
+      variables: { input: { email: normalizedEmail, password } },
     })
 
     const { customerAccessToken, customerUserErrors } =
       data.customerAccessTokenCreate
 
     if (customerUserErrors?.length) {
-      return NextResponse.json(
-        { error: customerUserErrors[0].message },
-        { status: 401 },
-      )
+      return NextResponse.json({ error: 'Credenziali non valide.' }, { status: 401 })
     }
 
     if (!customerAccessToken?.accessToken) {

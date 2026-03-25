@@ -9,12 +9,50 @@ import { fadeUp, viewportOnce } from '@/lib/motion'
 export function Footer() {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [subscribeError, setSubscribeError] = useState<string | null>(null)
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
-      setSubscribed(true)
+    if (!email || isSubmitting) return
+
+    setSubscribeError(null)
+    setSubscribed(false)
+    setAlreadySubscribed(false)
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const message =
+          typeof payload?.error === 'string'
+            ? payload.error
+            : 'Unable to subscribe right now. Please try again.'
+        throw new Error(message)
+      }
+
+      if (payload?.alreadySubscribed === true) {
+        setAlreadySubscribed(true)
+      } else {
+        setSubscribed(true)
+      }
       setEmail('')
+    } catch (error) {
+      setSubscribeError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to subscribe right now. Please try again.',
+      )
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -37,27 +75,36 @@ export function Footer() {
               Subscribe to receive updates on new collections, exclusive events, and special offers.
             </p>
           </div>
-          {subscribed ? (
+          {subscribed || alreadySubscribed ? (
             <p className="text-[10px] tracking-[0.16em] uppercase text-foreground">
-              Thank you for subscribing
+              {alreadySubscribed ? 'Email already subscribed' : 'Thank you for subscribing'}
             </p>
           ) : (
-            <form onSubmit={handleSubscribe} className="flex items-center gap-0 w-full md:w-auto">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email address"
-                required
-                className="bg-transparent border border-foreground/15 focus:border-foreground/50 px-4 py-3 text-[10px] tracking-[0.08em] outline-none placeholder:text-foreground/25 w-full md:w-72 transition-colors duration-200"
-              />
-              <button
-                type="submit"
-                className="bg-foreground text-background px-6 py-3 text-[10px] tracking-[0.16em] uppercase border border-foreground hover:bg-transparent hover:text-foreground transition-all duration-200 whitespace-nowrap"
-              >
-                Subscribe
-              </button>
-            </form>
+            <div className="w-full md:w-auto">
+              <form onSubmit={handleSubscribe} className="flex items-center gap-0 w-full md:w-auto">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Your email address"
+                  required
+                  disabled={isSubmitting}
+                  className="bg-transparent border border-foreground/15 focus:border-foreground/50 px-4 py-3 text-[10px] tracking-[0.08em] outline-none placeholder:text-foreground/25 w-full md:w-72 transition-colors duration-200 disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-foreground text-background px-6 py-3 text-[10px] tracking-[0.16em] uppercase border border-foreground hover:bg-transparent hover:text-foreground transition-all duration-200 whitespace-nowrap disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Subscribe'}
+                </button>
+              </form>
+              {subscribeError && (
+                <p className="mt-2 text-[9px] tracking-[0.05em] text-red-500/80">
+                  {subscribeError}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </motion.div>
@@ -69,8 +116,8 @@ export function Footer() {
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">Collections</h4>
             <Link href="/collections/coats" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Coats</Link>
             <Link href="/collections/accessories" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Accessories</Link>
-            <Link href="/collections/jewelry" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Jewelry</Link>
-            <Link href="/collections/bags" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Bags</Link>
+            <Link href="/jewelry" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Jewelry</Link>
+            <Link href="/bags" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Bags</Link>
           </div>
           <div className="flex flex-col gap-3">
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">About</h4>

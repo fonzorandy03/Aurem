@@ -3,7 +3,8 @@ import { Footer } from '@/components/layout/footer'
 import { CartPanel } from '@/components/cart/cart-panel'
 import { ProductDetail } from '@/components/product/product-detail'
 import { NewArrivalsSection } from '@/components/home/new-arrivals-section'
-import { getProduct } from '@/lib/shopify'
+import { getNewArrivals, getProduct } from '@/lib/shopify'
+import { resolvePricingCountryCode } from '@/lib/shopify/pricing-country'
 import { notFound } from 'next/navigation'
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -74,11 +75,12 @@ export default async function ProductPage({
   params: Promise<{ handle: string }>
 }) {
   const { handle } = await params
+  const countryCode = await resolvePricingCountryCode()
 
   // Try Shopify first
   let shopifyProduct = null
   try {
-    shopifyProduct = await getProduct(handle)
+    shopifyProduct = await getProduct(handle, countryCode)
   } catch (error) {
     console.error(`[ProductPage] Failed to fetch product "${handle}":`, error)
   }
@@ -86,6 +88,19 @@ export default async function ProductPage({
   // In production (non-demo), if product not found → 404
   if (!shopifyProduct && !DEMO_MODE) {
     notFound()
+  }
+
+  let newArrivals = []
+  try {
+    newArrivals = await getNewArrivals({
+      first: 6,
+      countryCode,
+      excludeHandle: handle,
+      excludeProductId: shopifyProduct?.id,
+      availableOnly: true,
+    })
+  } catch (error) {
+    console.error('[ProductPage] Failed to fetch New Arrivals:', error)
   }
 
   const demo = DEMO_MODE ? (demoProducts[handle] || defaultProduct) : defaultProduct
@@ -98,7 +113,7 @@ export default async function ProductPage({
           shopifyProduct={shopifyProduct}
           demo={demo}
         />
-        <NewArrivalsSection />
+        <NewArrivalsSection products={newArrivals} />
       </main>
       <Footer />
       <CartPanel />

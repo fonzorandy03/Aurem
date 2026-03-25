@@ -5,7 +5,7 @@
  * in base allo stato di autenticazione del cliente.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuth } from '@/components/account/auth-context'
 import { LoginForm } from '@/components/account/login-form'
 import { AccountDashboard } from '@/components/account/account-dashboard'
@@ -14,16 +14,26 @@ import { pageTransition } from '@/lib/motion'
 
 export function AccountPageClient() {
   const { customer, isLoading, refreshWithOrders } = useAuth()
+  const hydratedCustomerIdRef = useRef<string | null>(null)
 
-  // Fetch orders only when on the account page and authenticated
+  // Fetch full order history once per authenticated customer session.
+  // Without this guard, users with zero orders trigger an infinite refresh loop.
   useEffect(() => {
-    if (customer && customer.orders.length === 0) {
-      refreshWithOrders()
+    if (!customer) {
+      hydratedCustomerIdRef.current = null
+      return
     }
-  }, [customer, refreshWithOrders])
+
+    if (hydratedCustomerIdRef.current === customer.id) {
+      return
+    }
+
+    hydratedCustomerIdRef.current = customer.id
+    void refreshWithOrders()
+  }, [customer?.id, refreshWithOrders])
 
   // Spinner lineare durante il caricamento sessione
-  if (isLoading) {
+  if (isLoading && !customer) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="text-[10px] tracking-wide-industrial uppercase text-muted-foreground animate-pulse">

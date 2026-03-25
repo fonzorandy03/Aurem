@@ -1,7 +1,9 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { CartPanel } from '@/components/cart/cart-panel'
+import { Reveal } from '@/components/ui/reveal'
 
 export const metadata = {
   title: 'Our Story | AUREM — The Coat Society',
@@ -15,6 +17,7 @@ export default function AboutPage() {
       <CartPanel />
 
       <main className="pt-28 pb-32 zara-px">
+        <div className="max-w-[1200px] mx-auto">
 
         {/* ─── I. Chapter marker ─────────────────────────────────────────── */}
         <div className="mb-14">
@@ -32,13 +35,24 @@ export default function AboutPage() {
         </div>
 
         {/* ─── III. Origin ───────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-x-20 gap-y-10 max-w-5xl mb-24">
-          <div>
-            <p className="text-[9px] tracking-[0.22em] uppercase text-foreground/30 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-10 lg:gap-x-16 mb-20 items-center">
+          <Reveal className="flex flex-col gap-7" delayMs={0}>
+            <p className="text-[9px] tracking-[0.22em] uppercase text-foreground/30">
               Origin
             </p>
-          </div>
-          <div className="flex flex-col gap-5">
+            <div className="group relative aspect-[4/5] w-full overflow-hidden bg-foreground/5">
+              <div className="absolute inset-0 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                <Image
+                  src="/images/our1-fixed.jpeg"
+                  alt="AUREM craftsmanship tools"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              </div>
+            </div>
+          </Reveal>
+          <Reveal className="flex flex-col gap-5 lg:pr-6" delayMs={120}>
             <p className="text-[11px] leading-[1.85] tracking-[0.03em] text-foreground/60">
               AUREM comes from the Latin <em>aurum</em> — gold.
             </p>
@@ -54,11 +68,11 @@ export default function AboutPage() {
               Like gold, AUREM is designed to endure. To hold value beyond trends,
               beyond seasons, beyond the moment.
             </p>
-          </div>
+          </Reveal>
         </div>
 
         {/* ─── IV. Pull quote ────────────────────────────────────────────── */}
-        <div className="max-w-4xl mb-24 border-l-2 border-foreground/10 pl-8">
+        <div className="mb-20 border-l-2 border-foreground/10 pl-8">
           <blockquote className="text-[clamp(1.05rem,2.2vw,1.45rem)] leading-[1.65] tracking-[0.01em] text-foreground/70 italic">
             "In a world that accelerates, AUREM slows down.
             In a system that produces noise, AUREM builds silence.
@@ -67,15 +81,35 @@ export default function AboutPage() {
         </div>
 
         {/* ─── V. Only Coats ─────────────────────────────────────────────── */}
-        <div className="w-full h-px bg-foreground/8 max-w-5xl mb-20" />
+        <div className="w-full h-px bg-foreground/8 mb-20" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-x-20 gap-y-10 max-w-5xl mb-24">
-          <div>
-            <p className="text-[9px] tracking-[0.22em] uppercase text-foreground/30 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-10 lg:gap-x-16 mb-20 items-center">
+          <Reveal className="flex flex-col gap-7" delayMs={0}>
+            <p className="text-[9px] tracking-[0.22em] uppercase text-foreground/30">
               Only Coats. Always.
             </p>
-          </div>
-          <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-2 gap-4 lg:gap-5 w-full items-start">
+              <div className="group overflow-hidden bg-foreground/5" style={{ height: '480px' }}>
+                <div className="w-full h-full transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                  <img
+                    src="/images/our2.jpeg"
+                    alt="AUREM luxury fiber texture"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+              <div className="group overflow-hidden bg-foreground/5" style={{ height: '480px' }}>
+                <div className="w-full h-full transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                  <img
+                    src="/images/our3-v2.jpeg"
+                    alt="AUREM craftsmanship tools"
+                    className="w-full h-full object-cover object-center"
+                  />
+                </div>
+              </div>
+            </div>
+          </Reveal>
+          <Reveal className="flex flex-col gap-5 lg:pr-6" delayMs={120}>
             <p className="text-[11px] leading-[1.85] tracking-[0.03em] text-foreground/60">
               AUREM was born from a radical choice: to do just one thing, and do it forever.
             </p>
@@ -92,13 +126,13 @@ export default function AboutPage() {
               This is why AUREM does not produce collections.
               It produces coats that are meant to last.
             </p>
-          </div>
+          </Reveal>
         </div>
 
         {/* ─── VI. Pillars ───────────────────────────────────────────────── */}
-        <div className="w-full h-px bg-foreground/8 max-w-5xl mb-20" />
+        <div className="w-full h-px bg-foreground/8 mb-20" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-12 gap-y-14 max-w-5xl mb-24">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-12 gap-y-10 mb-20">
           {[
             {
               index: '01',
@@ -132,29 +166,32 @@ export default function AboutPage() {
         </div>
 
         {/* ─── VII. Closing statement ────────────────────────────────────── */}
-        <div className="w-full h-px bg-foreground/8 max-w-5xl mb-20" />
+        <div className="w-full h-px bg-foreground/8 mb-20" />
 
-        <div className="max-w-2xl mb-20">
-          <p className="text-[9px] tracking-[0.22em] uppercase text-foreground/25 mb-8">
-            The Coat Society
-          </p>
-          <p className="text-[clamp(1rem,2vw,1.25rem)] leading-[1.7] tracking-[0.01em] text-foreground/65">
-            AUREM does not target an audience.
-          </p>
-          <p className="text-[clamp(1rem,2vw,1.25rem)] leading-[1.7] tracking-[0.01em] text-foreground/45 mt-2">
-            It speaks to those who recognize the value of weight,
-            structure, and conscious choice.
-          </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-10 lg:gap-x-16 mb-20 items-start">
+          <div className="max-w-2xl">
+            <p className="text-[9px] tracking-[0.22em] uppercase text-foreground/25 mb-8">
+              The Coat Society
+            </p>
+            <p className="text-[clamp(1rem,2vw,1.25rem)] leading-[1.7] tracking-[0.01em] text-foreground/65">
+              AUREM does not target an audience.
+            </p>
+            <p className="text-[clamp(1rem,2vw,1.25rem)] leading-[1.7] tracking-[0.01em] text-foreground/45 mt-2">
+              It speaks to those who recognize the value of weight,
+              structure, and conscious choice.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center lg:justify-center mt-8 lg:mt-20 lg:translate-x-15">
+            <Link
+              href="/collections/coats"
+              className="inline-flex items-center justify-center px-6 py-3 text-[9px] tracking-[0.22em] uppercase text-foreground border border-foreground/20 hover:border-foreground/45 hover:text-foreground/75 transition-colors duration-200"
+            >
+              Explore the Collection
+            </Link>
+          </div>
         </div>
 
-        {/* ─── VIII. CTAs ────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-8">
-          <Link
-            href="/collections/all"
-            className="text-[9px] tracking-[0.22em] uppercase text-foreground hover:text-foreground/50 transition-colors duration-200 link-underline"
-          >
-            Explore the Collection
-          </Link>
         </div>
 
       </main>

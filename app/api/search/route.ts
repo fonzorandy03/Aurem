@@ -7,7 +7,35 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getCountryByCode, normalizeCountryCode } from '@/lib/customer-market'
+import { CUSTOMER_COUNTRY_COOKIE } from '@/lib/auth/constants'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
+import {
+  consumeRateLimit,
+  getClientIp,
+  tooManyRequestsResponse,
+} from '@/lib/security/request-guard'
+
+const GEO_COUNTRY_HEADERS = ['x-vercel-ip-country', 'cf-ipcountry', 'x-country-code']
+
+function getSearchCountryCode(req: NextRequest): string | null {
+  const cookieCountry = normalizeCountryCode(
+    req.cookies.get(CUSTOMER_COUNTRY_COOKIE)?.value ?? '',
+  )
+
+  if (cookieCountry && getCountryByCode(cookieCountry)) {
+    return cookieCountry
+  }
+
+  for (const headerName of GEO_COUNTRY_HEADERS) {
+    const headerCountry = normalizeCountryCode(req.headers.get(headerName) ?? '')
+    if (headerCountry && getCountryByCode(headerCountry)) {
+      return headerCountry
+    }
+  }
+
+  return null
+}
 
 /* ─── In-memory cache ────────────────────────────────────────────────────── */
 // Keyed by `${query}:${first}:${after}`. TTL: 60 s.
@@ -29,26 +57,9 @@ function setCache(key: string, data: unknown) {
   cache.set(key, { ts: Date.now(), data })
 }
 
-/* ─── Simple per-IP throttle ─────────────────────────────────────────────── */
-const RATE_WINDOW_MS = 10_000  // 10 s window
-const RATE_LIMIT     = 15       // max 15 requests per window
-const rateMap = new Map<string, { count: number; reset: number }>()
-
-function checkRate(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateMap.get(ip)
-  if (!entry || now > entry.reset) {
-    rateMap.set(ip, { count: 1, reset: now + RATE_WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
-
 /* ─── GraphQL query ──────────────────────────────────────────────────────── */
 const SEARCH_QUERY = /* graphql */ `
-  query SearchProducts($query: String!, $first: Int!, $after: String) {
+  query SearchProducts($query: String!, $first: Int!, $after: String, $country: CountryCode) @inContext(country: $country) {
     products(query: $query, first: $first, after: $after, sortKey: RELEVANCE) {
       pageInfo {
         hasNextPage
@@ -139,10 +150,16 @@ function sanitize(raw: string): string {
 
 /* ─── Route handler ──────────────────────────────────────────────────────── */
 export async function GET(req: NextRequest) {
-  // Rate limiting
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
-  if (!checkRate(ip)) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  const ip = getClientIp(req)
+  const limit = consumeRateLimit({
+    bucket: 'search',
+    key: ip,
+    limit: 20,
+    windowMs: 10_000,
+  })
+
+  if (!limit.ok) {
+    return tooManyRequestsResponse(limit.retryAfterSeconds)
   }
 
   const { searchParams } = req.nextUrl
@@ -151,12 +168,13 @@ export async function GET(req: NextRequest) {
   const after = searchParams.get('after') ?? undefined
 
   const q = sanitize(rawQ)
+  const countryCode = getSearchCountryCode(req)
   if (q.length < 2) {
     return NextResponse.json({ products: [], pageInfo: { hasNextPage: false, endCursor: null } })
   }
 
   // Cache check
-  const cacheKey = `${q}:${first}:${after ?? ''}`
+  const cacheKey = `${q}:${first}:${after ?? ''}:${countryCode ?? 'default'}`
   const cached = getCache(cacheKey)
   if (cached) {
     return NextResponse.json(cached, {
@@ -167,7 +185,7 @@ export async function GET(req: NextRequest) {
   try {
     const { data } = await storefrontFetch<ShopifySearchResponse>({
       query: SEARCH_QUERY,
-      variables: { query: q, first, after: after ?? null },
+      variables: { query: q, first, after: after ?? null, country: countryCode },
     })
 
     const products: SearchProduct[] = data.products.edges.map(({ node }) => ({
