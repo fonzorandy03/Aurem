@@ -21,13 +21,13 @@ const collectionMeta: Record<string, {
     title: 'COATS',
     subtitle: 'FW26 Collection',
     description: 'Structured silhouettes in premium wools and technical fabrics. Architectural outerwear designed for the modern wardrobe.',
-    image: '/images/category-coats.jpg',
+    image: '/images/runway-1.jpg',
   },
   bags: {
     title: 'BAGS',
     subtitle: 'Essential Accessories',
     description: 'Structured leather goods with clean geometric lines. Timeless forms in quality materials.',
-    image: '/images/category-bags.jpg',
+    image: '/images/moodboard-2.jpg',
   },
   jewelry: {
     title: 'JEWELRY',

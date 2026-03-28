@@ -12,21 +12,8 @@ export const metadata: Metadata = {
   description: 'AUREM - The Coat Society. Contemporary fashion brand Made in Italy. Explore our collections of coats, accessories, jewelry and bags.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/images/runway-1.jpg',
+    apple: '/images/runway-1.jpg',
   },
 }
 
