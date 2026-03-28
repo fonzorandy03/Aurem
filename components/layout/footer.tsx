@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { fadeUp, viewportOnce } from '@/lib/motion'
@@ -111,7 +110,7 @@ export function Footer() {
 
       {/* Links */}
       <div className="border-t border-foreground/10 py-12 zara-px">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-14">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 lg:gap-14">
           <div className="flex flex-col gap-3">
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">Collections</h4>
             <Link href="/collections/coats" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Coats</Link>
@@ -124,19 +123,12 @@ export function Footer() {
             <Link href="/about" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Our Story</Link>
           </div>
           <div className="flex flex-col gap-3">
-            <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">Support</h4>
-            <Link href="/account/orders" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">My Orders</Link>
-          </div>
-          <div className="flex flex-col gap-3">
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">Social</h4>
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">
               Instagram
             </a>
             <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">
               TikTok
-            </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">
-              LinkedIn
             </a>
           </div>
         </div>
