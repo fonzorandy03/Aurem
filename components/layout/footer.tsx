@@ -122,15 +122,10 @@ export function Footer() {
           <div className="flex flex-col gap-3">
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">About</h4>
             <Link href="/about" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Our Story</Link>
-            <Link href="/sustainability" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Sustainability</Link>
-            <Link href="/contact" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Contact</Link>
           </div>
           <div className="flex flex-col gap-3">
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">Support</h4>
-            <Link href="/shipping" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Shipping</Link>
-            <Link href="/returns" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Returns</Link>
             <Link href="/account/orders" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">My Orders</Link>
-            <Link href="/payments" className="text-[10px] text-foreground/35 tracking-[0.08em] hover:text-foreground transition-colors duration-200 link-underline">Secure Payments</Link>
           </div>
           <div className="flex flex-col gap-3">
             <h4 className="text-[13px] font-bold tracking-[0.18em] uppercase mb-1 text-foreground">Social</h4>
@@ -151,12 +146,6 @@ export function Footer() {
       <div className="border-t border-foreground/10 py-7 zara-px">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-wrap gap-6">
-            <Link href="/shipping" className="text-[9px] tracking-[0.16em] uppercase text-foreground/25 hover:text-foreground transition-colors duration-200">
-              Shipping
-            </Link>
-            <Link href="/returns" className="text-[9px] tracking-[0.16em] uppercase text-foreground/25 hover:text-foreground transition-colors duration-200">
-              Returns
-            </Link>
             <Link href="/terms" className="text-[9px] tracking-[0.16em] uppercase text-foreground/25 hover:text-foreground transition-colors duration-200">
               Terms of Service
             </Link>
