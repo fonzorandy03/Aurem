@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { fadeUp, staggerContainer, staggerItem, viewportOnce, imageHover } from '@/lib/motion'
-import { cn } from '@/lib/utils'
 
 type CategoryItem = {
   name: string
@@ -16,36 +15,30 @@ type CategoryItem = {
 }
 
 function CategoryImage({ src, fallbackSrc, alt }: { src: string; fallbackSrc: string; alt: string }) {
-  const [loaded, setLoaded] = useState(false)
   const [currentSrc, setCurrentSrc] = useState(src)
   const [usedFallback, setUsedFallback] = useState(false)
-  const onLoad = useCallback(() => setLoaded(true), [])
+  useEffect(() => {
+    setCurrentSrc(src)
+    setUsedFallback(false)
+  }, [src])
+
   const onError = useCallback(() => {
     if (!usedFallback && currentSrc !== fallbackSrc) {
-      setLoaded(false)
       setCurrentSrc(fallbackSrc)
       setUsedFallback(true)
       return
     }
   }, [currentSrc, fallbackSrc, usedFallback])
+
   return (
     <>
-      <div
-        className={cn(
-          'absolute inset-0 bg-neutral-100 transition-opacity duration-300 ease-out',
-          loaded ? 'opacity-0' : 'opacity-100'
-        )}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-neutral-100" aria-hidden="true" />
       <Image
         src={currentSrc}
         alt={alt}
         fill
-        className={cn(
-          'object-cover object-top transition-opacity duration-[320ms] ease-out',
-          loaded ? 'opacity-100' : 'opacity-0'
-        )}
-        onLoad={onLoad}
+        unoptimized
+        className="object-cover object-top"
         onError={onError}
       />
     </>

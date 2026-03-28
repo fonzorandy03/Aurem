@@ -26,7 +26,8 @@ export default async function HomePage() {
         countryCode,
       })
 
-      const image = coats[0]?.images?.edges?.[0]?.node?.url
+      const rawImage = coats[0]?.images?.edges?.[0]?.node?.url
+      const image = rawImage?.startsWith('//') ? `https:${rawImage}` : rawImage
       if (image) {
         coatsImageUrl = image
         break
