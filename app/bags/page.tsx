@@ -6,7 +6,7 @@ export default function BagsPage() {
       title="BAGS"
       subtitle="Collection Preview"
       description="A dedicated space for our upcoming bags selection."
-      image="/images/category-bags.jpg"
+      image="/images/moodboard-2.jpg"
     />
   )
 }

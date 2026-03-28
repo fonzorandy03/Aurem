@@ -22,7 +22,7 @@ const demoProducts: Record<string, Array<{
   category: string
 }>> = {
   coats: [
-    { id: 'c1', title: 'Structured Wool-Blend Coat', price: '1,890.00', image: '/images/category-coats.jpg', flatImage: '/images/flat-1.jpg', handle: 'structured-wool-coat', category: 'Outerwear' },
+    { id: 'c1', title: 'Structured Wool-Blend Coat', price: '1,890.00', image: '/images/runway-1.jpg', flatImage: '/images/flat-1.jpg', handle: 'structured-wool-coat', category: 'Outerwear' },
     { id: 'c2', title: 'Oversized Technical Parka', price: '1,490.00', image: '/images/model-1.jpg', flatImage: '/images/flat-2.jpg', handle: 'oversized-nylon-parka', category: 'Outerwear' },
     { id: 'c3', title: 'Belted Trench Coat', price: '2,150.00', image: '/images/runway-1.jpg', flatImage: '/images/flat-3.jpg', handle: 'belted-trench-coat', category: 'Outerwear' },
     { id: 'c4', title: 'Technical Shell Jacket', price: '1,250.00', image: '/images/runway-2.jpg', flatImage: '/images/flat-1.jpg', handle: 'technical-shell-jacket', category: 'Outerwear' },
@@ -30,10 +30,10 @@ const demoProducts: Record<string, Array<{
     { id: 'c6', title: 'Quilted Down Jacket', price: '1,190.00', image: '/images/model-2.jpg', flatImage: '/images/flat-3.jpg', handle: 'quilted-down-jacket', category: 'Outerwear' },
   ],
   bags: [
-    { id: 'b1', title: 'Structured Leather Tote', price: '890.00', image: '/images/category-bags.jpg', flatImage: '/images/category-bags.jpg', handle: 'structured-leather-tote', category: 'Bags' },
-    { id: 'b2', title: 'Mini Crossbody Bag', price: '650.00', image: '/images/moodboard-2.jpg', flatImage: '/images/category-bags.jpg', handle: 'mini-crossbody', category: 'Bags' },
-    { id: 'b3', title: 'Oversized Clutch', price: '490.00', image: '/images/moodboard-3.jpg', flatImage: '/images/category-bags.jpg', handle: 'oversized-clutch', category: 'Bags' },
-    { id: 'b4', title: 'Leather Bucket Bag', price: '720.00', image: '/images/runway-4.jpg', flatImage: '/images/category-bags.jpg', handle: 'leather-bucket-bag', category: 'Bags' },
+    { id: 'b1', title: 'Structured Leather Tote', price: '890.00', image: '/images/moodboard-2.jpg', flatImage: '/images/moodboard-2.jpg', handle: 'structured-leather-tote', category: 'Bags' },
+    { id: 'b2', title: 'Mini Crossbody Bag', price: '650.00', image: '/images/moodboard-2.jpg', flatImage: '/images/moodboard-2.jpg', handle: 'mini-crossbody', category: 'Bags' },
+    { id: 'b3', title: 'Oversized Clutch', price: '490.00', image: '/images/moodboard-3.jpg', flatImage: '/images/moodboard-2.jpg', handle: 'oversized-clutch', category: 'Bags' },
+    { id: 'b4', title: 'Leather Bucket Bag', price: '720.00', image: '/images/runway-4.jpg', flatImage: '/images/moodboard-2.jpg', handle: 'leather-bucket-bag', category: 'Bags' },
   ],
   jewelry: [
     { id: 'j1', title: 'Geometric Silver Earrings', price: '290.00', image: '/images/category-jewelry.jpg', flatImage: '/images/category-jewelry.jpg', handle: 'geometric-earrings', category: 'Jewelry' },
@@ -50,9 +50,9 @@ const demoProducts: Record<string, Array<{
     { id: 'n1', title: 'Technical Nylon Tank Top', price: '790.00', image: '/images/model-1.jpg', flatImage: '/images/flat-1.jpg', handle: 'technical-nylon-tank', category: 'Tops' },
     { id: 'n2', title: 'Oversized Technical Parka', price: '1,490.00', image: '/images/model-2.jpg', flatImage: '/images/flat-2.jpg', handle: 'oversized-parka', category: 'Outerwear' },
     { id: 'n3', title: 'Fine Knit Turtleneck', price: '650.00', image: '/images/model-3.jpg', flatImage: '/images/flat-3.jpg', handle: 'fine-knit-turtleneck', category: 'Knitwear' },
-    { id: 'n4', title: 'Structured Wool Coat', price: '1,890.00', image: '/images/category-coats.jpg', flatImage: '/images/flat-1.jpg', handle: 'structured-wool-coat-2', category: 'Outerwear' },
+    { id: 'n4', title: 'Structured Wool Coat', price: '1,890.00', image: '/images/runway-1.jpg', flatImage: '/images/flat-1.jpg', handle: 'structured-wool-coat-2', category: 'Outerwear' },
     { id: 'n5', title: 'Geometric Earrings', price: '290.00', image: '/images/category-jewelry.jpg', flatImage: '/images/category-jewelry.jpg', handle: 'geometric-earrings-2', category: 'Jewelry' },
-    { id: 'n6', title: 'Mini Leather Crossbody', price: '650.00', image: '/images/category-bags.jpg', flatImage: '/images/category-bags.jpg', handle: 'mini-leather-crossbody', category: 'Bags' },
+    { id: 'n6', title: 'Mini Leather Crossbody', price: '650.00', image: '/images/moodboard-2.jpg', flatImage: '/images/moodboard-2.jpg', handle: 'mini-leather-crossbody', category: 'Bags' },
   ],
 }
 

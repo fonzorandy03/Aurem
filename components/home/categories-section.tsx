@@ -11,13 +11,13 @@ const categories = [
   {
     name: 'Coats',
     href: '/collections/coats',
-    image: '/images/category-coats.jpg',
+    image: '/images/runway-1.jpg',
     comingSoon: false,
   },
   {
     name: 'Bags',
     href: '/collections/bags',
-    image: '/images/category-bags.jpg',
+    image: '/images/moodboard-2.jpg',
     comingSoon: true,
   },
   {
