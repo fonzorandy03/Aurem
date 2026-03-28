@@ -4,6 +4,7 @@ import { CartPanel } from '@/components/cart/cart-panel'
 import { ProductDetail } from '@/components/product/product-detail'
 import { NewArrivalsSection } from '@/components/home/new-arrivals-section'
 import { getNewArrivals, getProduct } from '@/lib/shopify'
+import type { ShopifyProduct } from '@/lib/shopify/types'
 import { resolvePricingCountryCode } from '@/lib/shopify/pricing-country'
 import { notFound } from 'next/navigation'
 
@@ -90,7 +91,7 @@ export default async function ProductPage({
     notFound()
   }
 
-  let newArrivals = []
+  let newArrivals: ShopifyProduct[] = []
   try {
     newArrivals = await getNewArrivals({
       first: 6,

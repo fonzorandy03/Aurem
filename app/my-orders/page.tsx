@@ -3,6 +3,7 @@ import { Footer } from '@/components/layout/footer'
 import { CartPanel } from '@/components/cart/cart-panel'
 import { OrdersList } from '@/components/account/orders-list'
 import { RequireAuth } from '@/components/auth/require-auth'
+import { Suspense } from 'react'
 
 export const metadata = {
   title: 'My Orders | AUREM',
@@ -14,9 +15,11 @@ export default function MyOrdersPage() {
     <>
       <Header />
       <main className="pt-20 min-h-screen bg-background">
-        <RequireAuth>
-          <OrdersList />
-        </RequireAuth>
+        <Suspense fallback={null}>
+          <RequireAuth>
+            <OrdersList />
+          </RequireAuth>
+        </Suspense>
       </main>
       <Footer />
       <CartPanel />

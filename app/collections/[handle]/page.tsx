@@ -4,6 +4,7 @@ import { CartPanel } from '@/components/cart/cart-panel'
 import { CollectionPageClient } from '@/components/collections/collection-page-client'
 import { CollectionHero } from '@/components/collections/collection-hero'
 import { getCollectionProducts, getNewArrivals } from '@/lib/shopify'
+import type { ShopifyProduct } from '@/lib/shopify/types'
 import { resolvePricingCountryCode } from '@/lib/shopify/pricing-country'
 import { notFound } from 'next/navigation'
 
@@ -71,7 +72,7 @@ export default async function CollectionPage({
     image: '/images/editorial-break.jpg',
   }
 
-  let products = []
+  let products: ShopifyProduct[] = []
   try {
     if (resolvedHandle === 'new-arrivals') {
       products = await getNewArrivals({

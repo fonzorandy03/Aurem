@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { RequireAuth } from '@/components/auth/require-auth'
 import { useCart } from '@/components/cart/cart-context'
 
@@ -12,8 +12,10 @@ export function CartPageClient() {
   }, [openCart])
 
   return (
-    <RequireAuth>
-      <main className="pt-20 min-h-screen bg-background" />
-    </RequireAuth>
+    <Suspense fallback={<main className="pt-20 min-h-screen bg-background" />}>
+      <RequireAuth>
+        <main className="pt-20 min-h-screen bg-background" />
+      </RequireAuth>
+    </Suspense>
   )
 }

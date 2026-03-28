@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { CUSTOMER_TOKEN_COOKIE } from './lib/auth/constants'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get(CUSTOMER_TOKEN_COOKIE)?.value
 
   if (!token) {
