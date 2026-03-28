@@ -7,58 +7,47 @@ import { motion } from 'framer-motion'
 import { fadeUp, staggerContainer, staggerItem, viewportOnce, imageHover } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
-const categories = [
-  {
-    name: 'Coats',
-    href: '/collections/coats',
-    image: '/images/runway-1.jpg',
-    comingSoon: false,
-  },
-  {
-    name: 'Bags',
-    href: '/collections/bags',
-    image: '/images/moodboard-2.jpg',
-    comingSoon: true,
-  },
-  {
-    name: 'Jewelry',
-    href: '/collections/jewelry',
-    image: '/images/category-jewelry.jpg',
-    comingSoon: true,
-  },
-]
+type CategoryItem = {
+  name: string
+  href: string
+  image: string
+  fallbackImage: string
+  comingSoon: boolean
+}
 
-function CategoryImage({ src, alt }: { src: string; alt: string }) {
+function CategoryImage({ src, fallbackSrc, alt }: { src: string; fallbackSrc: string; alt: string }) {
   const [loaded, setLoaded] = useState(false)
-  const [error, setError] = useState(false)
+  const [currentSrc, setCurrentSrc] = useState(src)
+  const [usedFallback, setUsedFallback] = useState(false)
   const onLoad = useCallback(() => setLoaded(true), [])
-  const onError = useCallback(() => setError(true), [])
+  const onError = useCallback(() => {
+    if (!usedFallback && currentSrc !== fallbackSrc) {
+      setLoaded(false)
+      setCurrentSrc(fallbackSrc)
+      setUsedFallback(true)
+      return
+    }
+  }, [currentSrc, fallbackSrc, usedFallback])
   return (
     <>
-      {!error && (
-        <div
-          className={cn(
-            'absolute inset-0 bg-neutral-100 transition-opacity duration-300 ease-out',
-            loaded ? 'opacity-0' : 'opacity-100'
-          )}
-          aria-hidden="true"
-        />
-      )}
-      {error ? (
-        <div className="absolute inset-0 bg-neutral-100" aria-hidden="true" />
-      ) : (
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          className={cn(
-            'object-cover object-top transition-opacity duration-[320ms] ease-out',
-            loaded ? 'opacity-100' : 'opacity-0'
-          )}
-          onLoad={onLoad}
-          onError={onError}
-        />
-      )}
+      <div
+        className={cn(
+          'absolute inset-0 bg-neutral-100 transition-opacity duration-300 ease-out',
+          loaded ? 'opacity-0' : 'opacity-100'
+        )}
+        aria-hidden="true"
+      />
+      <Image
+        src={currentSrc}
+        alt={alt}
+        fill
+        className={cn(
+          'object-cover object-top transition-opacity duration-[320ms] ease-out',
+          loaded ? 'opacity-100' : 'opacity-0'
+        )}
+        onLoad={onLoad}
+        onError={onError}
+      />
     </>
   )
 }
@@ -111,7 +100,31 @@ function ComingSoonTeaser({ name }: { name: string }) {
   )
 }
 
-export function CategoriesSection() {
+export function CategoriesSection({ coatsImageUrl }: { coatsImageUrl?: string | null }) {
+  const categories: CategoryItem[] = [
+    {
+      name: 'Coats',
+      href: '/collections/coats',
+      image: coatsImageUrl || '/images/runway-1.jpg',
+      fallbackImage: '/images/runway-1.jpg',
+      comingSoon: false,
+    },
+    {
+      name: 'Bags',
+      href: '/collections/bags',
+      image: '/images/moodboard-2.jpg',
+      fallbackImage: '/images/moodboard-2.jpg',
+      comingSoon: true,
+    },
+    {
+      name: 'Jewelry',
+      href: '/collections/jewelry',
+      image: '/images/category-jewelry.jpg',
+      fallbackImage: '/images/runway-6.jpg',
+      comingSoon: true,
+    },
+  ]
+
   return (
     <section className="pt-16 pb-20 lg:pt-20 lg:pb-28 bg-background">
       <div className="zara-px">
@@ -155,7 +168,7 @@ export function CategoriesSection() {
                     className="relative aspect-[3/4] overflow-hidden bg-secondary"
                     whileHover={imageHover}
                   >
-                    <CategoryImage src={cat.image} alt={cat.name} />
+                    <CategoryImage src={cat.image} fallbackSrc={cat.fallbackImage} alt={cat.name} />
                     <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/[0.04] transition-colors duration-300" />
                   </motion.div>
                   <div className="mt-5 flex items-center justify-between">

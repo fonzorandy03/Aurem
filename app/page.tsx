@@ -1,10 +1,11 @@
 import { HomeClient } from '@/components/home/home-client'
-import { getNewArrivals } from '@/lib/shopify'
+import { getCollectionProducts, getNewArrivals } from '@/lib/shopify'
 import { resolvePricingCountryCode } from '@/lib/shopify/pricing-country'
 import type { ShopifyProduct } from '@/lib/shopify/types'
 
 export default async function HomePage() {
   let products: ShopifyProduct[] = []
+  let coatsImageUrl: string | null = null
   const countryCode = await resolvePricingCountryCode()
 
   try {
@@ -16,5 +17,24 @@ export default async function HomePage() {
     // fallback to demo if Shopify is unavailable
   }
 
-  return <HomeClient products={products} />
+  try {
+    const tryHandles = ['coats', 'cappotti']
+    for (const handle of tryHandles) {
+      const coats = await getCollectionProducts({
+        collection: handle,
+        limit: 1,
+        countryCode,
+      })
+
+      const image = coats[0]?.images?.edges?.[0]?.node?.url
+      if (image) {
+        coatsImageUrl = image
+        break
+      }
+    }
+  } catch {
+    // keep local fallback image when Shopify collection image is unavailable
+  }
+
+  return <HomeClient products={products} coatsImageUrl={coatsImageUrl} />
 }

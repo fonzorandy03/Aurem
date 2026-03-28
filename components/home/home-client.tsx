@@ -13,9 +13,10 @@ import type { ShopifyProduct } from '@/lib/shopify/types'
 
 interface HomeClientProps {
   products: ShopifyProduct[]
+  coatsImageUrl?: string | null
 }
 
-export function HomeClient({ products }: HomeClientProps) {
+export function HomeClient({ products, coatsImageUrl }: HomeClientProps) {
   return (
     <>
       <AuremFixedLayer />
@@ -28,7 +29,7 @@ export function HomeClient({ products }: HomeClientProps) {
       >
         <MoodboardSection />
         <NewArrivalsSection products={products} />
-        <CategoriesSection />
+        <CategoriesSection coatsImageUrl={coatsImageUrl} />
       </motion.main>
 
       <div id="aurem-sentinel" className="h-px w-full" aria-hidden="true" />
