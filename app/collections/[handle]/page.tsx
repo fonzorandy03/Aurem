@@ -64,6 +64,7 @@ export default async function CollectionPage({
 }) {
   const { handle } = await params
   const resolvedHandle = handleRedirects[handle] || handle
+  const collectionHandlesToTry = Array.from(new Set([resolvedHandle, handle]))
   const countryCode = await resolvePricingCountryCode()
   const meta = collectionMeta[resolvedHandle] || {
     title: resolvedHandle.replace(/-/g, ' ').toUpperCase(),
@@ -81,11 +82,15 @@ export default async function CollectionPage({
         availableOnly: true,
       })
     } else {
-      products = await getCollectionProducts({
-        collection: resolvedHandle,
-        limit: 24,
-        countryCode,
-      })
+      for (const collectionHandle of collectionHandlesToTry) {
+        products = await getCollectionProducts({
+          collection: collectionHandle,
+          limit: 24,
+          countryCode,
+        })
+
+        if (products.length > 0) break
+      }
     }
   } catch (error) {
     console.error(`[Collection] Failed to fetch "${resolvedHandle}":`, error)
@@ -94,8 +99,11 @@ export default async function CollectionPage({
     }
   }
 
-  // If no products and not in demo mode, show 404
-  if (products.length === 0 && !IS_DEMO) {
+  const isKnownCollection = Boolean(collectionMeta[resolvedHandle])
+
+  // Show 404 only for unknown handles with no products.
+  // For known collections, render the page even when products are empty.
+  if (products.length === 0 && !IS_DEMO && !isKnownCollection) {
     notFound()
   }
 
