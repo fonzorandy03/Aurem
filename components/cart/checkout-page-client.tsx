@@ -4,19 +4,7 @@ import { Suspense, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { RequireAuth } from '@/components/auth/require-auth'
 import { useCart } from '@/components/cart/cart-context'
-
-function isValidCheckoutUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url)
-    return parsed.protocol === 'https:' && (
-      parsed.hostname.endsWith('.myshopify.com') ||
-      parsed.hostname.endsWith('.shopify.com') ||
-      parsed.hostname === 'checkout.shopify.com'
-    )
-  } catch {
-    return false
-  }
-}
+import { isValidCheckoutUrl } from '@/lib/shopify/is-valid-checkout-url'
 
 export function CheckoutPageClient() {
   const router = useRouter()

@@ -10,6 +10,7 @@ import { drawer, overlayFade, cartItem, cartList, ease } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
+import { isValidCheckoutUrl } from '@/lib/shopify/is-valid-checkout-url'
 
 // ── Stock alert modal ─────────────────────────────────────────────────────────
 type StockAlert = { available: number | null }
@@ -97,20 +98,6 @@ export function CartPanel() {
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [isOpen, closeCart, stockAlert])
-
-  /** Validate that a checkout URL is safe to redirect to */
-  const isValidCheckoutUrl = (url: string): boolean => {
-    try {
-      const parsed = new URL(url)
-      return parsed.protocol === 'https:' && (
-        parsed.hostname.endsWith('.myshopify.com') ||
-        parsed.hostname.endsWith('.shopify.com') ||
-        parsed.hostname === 'checkout.shopify.com'
-      )
-    } catch {
-      return false
-    }
-  }
 
   // Before redirecting to Shopify checkout, refresh the buyer identity so
   // the order is always linked to the logged-in customer account.
