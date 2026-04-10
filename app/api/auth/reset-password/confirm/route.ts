@@ -160,6 +160,22 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[ResetPassword] Error:', error)
 
+    const message = error instanceof Error ? error.message : ''
+
+    if (
+      message.includes('Unidentified customer') ||
+      message.includes('"code":"NOT_FOUND"')
+    ) {
+      return NextResponse.json(
+        {
+          error: 'INVALID_TOKEN',
+          message:
+            'Il link di reset non e valido per questo flusso account Shopify. Apri il link ricevuto e completa la verifica nel flusso Shopify, poi aggiorna la password dalle impostazioni account.',
+        },
+        { status: 400 },
+      )
+    }
+
     return NextResponse.json(
       {
         error: 'INTERNAL_SERVER_ERROR',
