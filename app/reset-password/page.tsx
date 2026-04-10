@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ease } from '@/lib/motion'
 
@@ -59,8 +59,8 @@ const itemVariants = {
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const [token, setToken] = useState<string | null>(null)
+  const [hasParsedQuery, setHasParsedQuery] = useState(false)
 
   const [state, setState] = useState<State>('idle')
   const [password, setPassword] = useState('')
@@ -70,10 +70,13 @@ export default function ResetPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
-    if (!token) {
+    const queryToken = new URLSearchParams(window.location.search).get('token')
+    setToken(queryToken)
+    setHasParsedQuery(true)
+    if (!queryToken) {
       setState('expired')
     }
-  }, [token])
+  }, [])
 
   const validatePasswords = useCallback((): boolean => {
     const errs: ValidationError = {}
@@ -157,6 +160,16 @@ export default function ResetPasswordPage() {
     },
     [validatePasswords, token, router],
   )
+
+  if (!hasParsedQuery) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+        <p className="text-xs tracking-industrial text-muted-foreground uppercase">
+          Loading...
+        </p>
+      </div>
+    )
+  }
 
   if (!token) {
     return (
