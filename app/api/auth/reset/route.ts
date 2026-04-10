@@ -33,7 +33,7 @@ const RECOVER_MUTATION = /* gql */ `
 export async function POST(req: NextRequest) {
   const genericOk = NextResponse.json({
     ok: true,
-    message: 'If this email is registered, you will receive a password reset link.',
+    message: 'If this email is registered, you will receive password reset instructions.',
   })
 
   try {
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      message: 'If this email is registered, you will receive a password reset link by email.',
+      message: 'If this email is registered, you will receive password reset instructions by email. Depending on Shopify account settings, you may continue on a secure Shopify page.',
     })
   } catch (err) {
     return NextResponse.json(

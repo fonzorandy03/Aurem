@@ -71,8 +71,8 @@ const COPY = {
   },
   reset: {
     title:    'Reset Password',
-    subtitle: 'Enter the email associated with your account and we will send you a reset link.',
-    cta:      'Send Link',
+    subtitle: 'Enter the email associated with your account and we will send reset instructions. Depending on Shopify account settings, you may continue in a secure Shopify page.',
+    cta:      'Send Instructions',
   },
 } as const
 
