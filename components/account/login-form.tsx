@@ -32,7 +32,6 @@ import {
   suggestPostalCode,
 } from '@/lib/address-intl'
 import { ease } from '@/lib/motion'
-import { LoginButton } from '@/components/account/login-button'
 
 type Mode = 'login' | 'register' | 'reset'
 
@@ -641,10 +640,6 @@ export function LoginForm() {
                   </span>
                 ) : COPY[mode].cta}
               </button>
-
-              {mode === 'login' && (
-                <LoginButton onError={setError} />
-              )}
             </motion.form>
           </AnimatePresence>
 
