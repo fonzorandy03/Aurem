@@ -1,12 +1,12 @@
 /**
  * POST /api/auth/reset-password/confirm
  *
- * Riceve il token di reset di Shopify e la nuova password.
+ * Riceve il reset URL di Shopify e la nuova password.
  * Usa Shopify Storefront API per resettare la password.
  *
  * Request:
  *   POST /api/auth/reset-password/confirm
- *   { token: string, password: string }
+ *   { resetUrl: string, password: string }
  *
  * Response:
  *   { ok: true }
@@ -21,25 +21,9 @@ import {
   tooManyRequestsResponse,
 } from '@/lib/security/request-guard'
 
-const CUSTOMER_RESET_MUTATION = /* gql */ `
-  mutation CustomerReset($id: String!, $input: CustomerResetInput!) {
-    customerReset(id: $id, input: $input) {
-      customer {
-        id
-        email
-      }
-      customerUserErrors {
-        code
-        field
-        message
-      }
-    }
-  }
-`
-
-const CUSTOMER_RECOVER_ACTIVATE_MUTATION = /* gql */ `
-  mutation CustomerActivateByUrl($activationUrl: URL!, $password: String!) {
-    customerActivateByUrl(activationUrl: $activationUrl, password: $password) {
+const CUSTOMER_RESET_BY_URL_MUTATION = /* gql */ `
+  mutation CustomerResetByUrl($resetUrl: URL!, $password: String!) {
+    customerResetByUrl(resetUrl: $resetUrl, password: $password) {
       customer {
         id
         email
@@ -55,12 +39,18 @@ const CUSTOMER_RECOVER_ACTIVATE_MUTATION = /* gql */ `
 
 export async function POST(req: NextRequest) {
   try {
-    const { token, password } = await req.json()
+    const { resetUrl, token, password } = await req.json()
+    const resolvedResetUrl =
+      typeof resetUrl === 'string' && resetUrl
+        ? resetUrl
+        : typeof token === 'string'
+          ? token
+          : ''
 
     const ip = getClientIp(req)
     const limit = consumeRateLimit({
       bucket: 'auth-reset-confirm',
-      key: `${ip}:${token || 'unknown'}`,
+      key: `${ip}:${resolvedResetUrl || 'unknown'}`,
       limit: 3,
       windowMs: 15 * 60 * 1000,
     })
@@ -69,7 +59,7 @@ export async function POST(req: NextRequest) {
       return tooManyRequestsResponse(limit.retryAfterSeconds)
     }
 
-    if (!token || typeof token !== 'string') {
+    if (!resolvedResetUrl) {
       return NextResponse.json(
         {
           error: 'INVALID_TOKEN',
@@ -89,18 +79,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Il token di reset di Shopify è un URL completo simile a:
-    // https://yourstore.myshopify.com/account/reset/...
-    // Lo usiamo direttamente in customerActivateByUrl
+    // Shopify fornisce un reset URL completo da usare in customerResetByUrl.
     const { data } = await storefrontFetch<any>({
-      query: CUSTOMER_RECOVER_ACTIVATE_MUTATION,
+      query: CUSTOMER_RESET_BY_URL_MUTATION,
       variables: {
-        activationUrl: token,
+        resetUrl: resolvedResetUrl,
         password,
       },
     })
 
-    const result = data?.customerActivateByUrl
+    const result = data?.customerResetByUrl
     if (!result) {
       return NextResponse.json(
         {

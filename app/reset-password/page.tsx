@@ -59,7 +59,7 @@ const itemVariants = {
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const [token, setToken] = useState<string | null>(null)
+  const [resetUrl, setResetUrl] = useState<string | null>(null)
   const [hasParsedQuery, setHasParsedQuery] = useState(false)
 
   const [state, setState] = useState<State>('idle')
@@ -70,10 +70,11 @@ export default function ResetPasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
-    const queryToken = new URLSearchParams(window.location.search).get('token')
-    setToken(queryToken)
+    const params = new URLSearchParams(window.location.search)
+    const queryResetUrl = params.get('reset_url') ?? params.get('token')
+    setResetUrl(queryResetUrl)
     setHasParsedQuery(true)
-    if (!queryToken) {
+    if (!queryResetUrl) {
       setState('expired')
     }
   }, [])
@@ -111,7 +112,7 @@ export default function ResetPasswordPage() {
         return
       }
 
-      if (!token) {
+      if (!resetUrl) {
         setState('expired')
         return
       }
@@ -123,7 +124,7 @@ export default function ResetPasswordPage() {
         const res = await fetch('/api/auth/reset-password/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, password }),
+          body: JSON.stringify({ resetUrl, password }),
           credentials: 'same-origin',
         })
 
@@ -158,7 +159,7 @@ export default function ResetPasswordPage() {
         })
       }
     },
-    [validatePasswords, token, router],
+    [validatePasswords, resetUrl, router],
   )
 
   if (!hasParsedQuery) {
@@ -171,7 +172,7 @@ export default function ResetPasswordPage() {
     )
   }
 
-  if (!token) {
+  if (!resetUrl) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
         <motion.div
