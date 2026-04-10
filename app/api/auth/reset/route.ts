@@ -2,14 +2,11 @@
  * POST /api/auth/reset
  *
  * Invia un'email di recupero password tramite Shopify Storefront API.
- * Prima verifica che l'email sia registrata usando Admin API.
- * Se registrata: invia il reset via Shopify
- * Se non registrata: ritorna errore specifico
+ * Risponde in modo generico per sicurezza (anti-enumerazione) e per ridurre latenza.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
-import { CustomerDAO } from '@/dao/customer.dao'
 import {
   consumeRateLimit,
   getClientIp,
@@ -33,7 +30,8 @@ const RECOVER_MUTATION = /* gql */ `
 export async function POST(req: NextRequest) {
   const genericOk = NextResponse.json({
     ok: true,
-    message: 'If this email is registered, you will receive password reset instructions.',
+    message:
+      'If this email is registered, you will receive password reset instructions by email. Depending on Shopify account settings, you may continue on a secure Shopify page.',
   })
 
   try {
@@ -52,7 +50,6 @@ export async function POST(req: NextRequest) {
       return tooManyRequestsResponse(limit.retryAfterSeconds)
     }
 
-    // Valida email format
     if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
       return NextResponse.json(
         {
@@ -63,73 +60,36 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verifica che l'email sia registrata
-    try {
-      const customer = await CustomerDAO.getByEmail(normalizedEmail)
-      if (!customer) {
-        return NextResponse.json(
-          {
-            error: 'EMAIL_NOT_FOUND',
-            message: 'This email address is not registered.',
-          },
-          { status: 404 },
-        )
-      }
-
-      console.log('[auth/reset] customer found', {
-        email: normalizedEmail,
-        state: customer.state,
-      })
-    } catch (err) {
-      // Se Admin API fallisce, ritorna generico
-      return NextResponse.json(
-        {
-          error: 'SERVICE_ERROR',
-          message: 'We could not verify this email address. Please try again.',
-        },
-        { status: 500 },
-      )
-    }
-
-    // Email è registrata — procedi con il reset
     const { data } = await storefrontFetch<any>({
       query: RECOVER_MUTATION,
       variables: { email: normalizedEmail },
     })
 
-    const errors = data.customerRecover?.customerUserErrors
+    const errors = data?.customerRecover?.customerUserErrors
     if (errors?.length) {
       console.error('[auth/reset] customerRecover userErrors', {
         email: normalizedEmail,
         errors,
       })
-    } else {
-      console.log('[auth/reset] customerRecover accepted', {
-        email: normalizedEmail,
-      })
+      // Manteniamo risposta generica anche in errore per non esporre esistenza account.
+      return genericOk
     }
 
-    if (errors?.length) {
-      return NextResponse.json(
-        {
-          error: 'RESET_FAILED',
-          message: 'We could not send the password reset email. Please try again.',
-        },
-        { status: 500 },
-      )
-    }
-
-    return NextResponse.json({
-      ok: true,
-      message: 'If this email is registered, you will receive password reset instructions by email. Depending on Shopify account settings, you may continue on a secure Shopify page.',
+    console.log('[auth/reset] customerRecover accepted', {
+      email: normalizedEmail,
     })
+
+    return genericOk
   } catch (err) {
+    console.error('[auth/reset] internal error', err)
+    // Anche qui: risposta generica per UX coerente e sicurezza.
     return NextResponse.json(
       {
-        error: 'INTERNAL_ERROR',
-        message: 'Server error. Please try again.',
+        ok: true,
+        message:
+          'If this email is registered, you will receive password reset instructions by email. Please check spam or promotions folders as well.',
       },
-      { status: 500 },
+      { status: 200 },
     )
   }
 }
