@@ -86,16 +86,6 @@ export function MoodboardSection() {
     >
       <div className="zara-px">
 
-        {/* Season header row — minimal luxury identifier */}
-        <motion.div
-          className="flex items-center justify-end mb-4"
-          variants={luxuryReveal}
-        >
-          <span className="text-[9px] tracking-[0.26em] uppercase text-foreground/25 font-medium">
-            SS 26
-          </span>
-        </motion.div>
-
         {/* Grid: large left + stacked right */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] lg:grid-cols-[3fr_2fr] gap-3 md:gap-4">
 

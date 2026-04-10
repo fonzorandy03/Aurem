@@ -19,7 +19,7 @@ const collectionMeta: Record<string, {
 }> = {
   coats: {
     title: 'COATS',
-    subtitle: 'FW26 Collection',
+    subtitle: '',
     description: 'Structured silhouettes in premium wools and technical fabrics. Architectural outerwear designed for the modern wardrobe.',
     image: '/images/runway-1.jpg',
   },
