@@ -79,7 +79,7 @@ export function MoodboardSection() {
 
   return (
     <motion.section
-      className="bg-white pt-7 pb-0"
+      className="bg-white pt-20 pb-16 lg:pb-24"
       variants={heroContainer}
       initial={reduce ? 'visible' : 'hidden'}
       animate="visible"
@@ -87,7 +87,7 @@ export function MoodboardSection() {
       <div className="zara-px">
 
         {/* Grid: large left + stacked right */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] lg:grid-cols-[3fr_2fr] gap-3 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] lg:grid-cols-[3fr_2fr] gap-6 md:gap-8">
 
           {/* IMAGE 1 — Large hero portrait */}
           <motion.div
@@ -103,7 +103,7 @@ export function MoodboardSection() {
           </motion.div>
 
           {/* Right column: two stacked images */}
-          <div className="flex flex-col gap-3 md:gap-4">
+          <div className="flex flex-col gap-6 md:gap-8">
             <motion.div
               className="relative overflow-hidden"
               style={{ aspectRatio: '3/4' }}
