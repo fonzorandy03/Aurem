@@ -25,6 +25,7 @@ import {
   createCustomerDefaultAddress,
   saveCustomerMarketAssignment,
 } from '@/lib/shopify/customer-registration'
+import { sendAccountWelcomeEmail } from '@/lib/email/account'
 import {
   consumeRateLimit,
   getClientIp,
@@ -152,6 +153,15 @@ export async function POST(req: NextRequest) {
     } catch (setupError) {
       setupCompleted = false
       console.warn('[auth/register/setup] non-blocking setup failed', setupError)
+    }
+
+    try {
+      const emailResult = await sendAccountWelcomeEmail(customer.email, customer.firstName)
+      if (emailResult.status === 'skipped' && process.env.NODE_ENV !== 'production') {
+        console.warn('[auth/register/welcome-email] skipped:', emailResult.reason)
+      }
+    } catch (emailError) {
+      console.error('[auth/register/welcome-email] failed', emailError)
     }
 
     const res = NextResponse.json({
