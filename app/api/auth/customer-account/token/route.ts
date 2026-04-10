@@ -17,7 +17,7 @@ function getTokenEndpoint(): string | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, id_token: idTokenFromClient } = await req.json()
+    const { code, codeVerifier, id_token: idTokenFromClient } = await req.json()
 
     if (idTokenFromClient) {
       const res = NextResponse.json({ ok: true, source: 'id_token' })
@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'MISSING_CODE' }, { status: 400 })
     }
 
-    const clientId = process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID?.trim()
+    const clientId =
+      process.env.SHOPIFY_CLIENT_ID?.trim() ??
+      process.env.SHOPIFY_CUSTOMER_ACCOUNT_CLIENT_ID?.trim()
     const redirectUri = process.env.SHOPIFY_CUSTOMER_ACCOUNT_REDIRECT_URI?.trim()
     const tokenEndpoint = getTokenEndpoint()
 
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'MISSING_CONFIG' }, { status: 500 })
     }
 
-    const codeVerifier = req.cookies.get('aurem_shopify_pkce_verifier')?.value
+    const cookieCodeVerifier = req.cookies.get('aurem_shopify_pkce_verifier')?.value
 
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
@@ -52,8 +54,13 @@ export async function POST(req: NextRequest) {
       code,
     })
 
-    if (codeVerifier) {
-      body.set('code_verifier', codeVerifier)
+    const effectiveCodeVerifier =
+      typeof codeVerifier === 'string' && codeVerifier
+        ? codeVerifier
+        : cookieCodeVerifier
+
+    if (effectiveCodeVerifier) {
+      body.set('code_verifier', effectiveCodeVerifier)
     }
 
     const upstream = await fetch(tokenEndpoint, {

@@ -20,7 +20,16 @@ export default function AuthCallbackPage() {
       }
 
       const code = params.get('code')
+      const returnedState = params.get('state')
       const idToken = params.get('id_token')
+
+      const expectedState = sessionStorage.getItem('oauth_state')
+      const codeVerifier = sessionStorage.getItem('code_verifier')
+
+      if (code && (!returnedState || !expectedState || returnedState !== expectedState)) {
+        router.replace('/account?mode=login&callback_error=1')
+        return
+      }
 
       if (!code && !idToken) {
         router.replace('/account?mode=login&success=shopify-auth')
@@ -30,11 +39,15 @@ export default function AuthCallbackPage() {
       setMessage('Finalizing Shopify verification...')
 
       try {
-        const res = await fetch('/api/auth/customer-account/token', {
+        const res = await fetch('/api/auth/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ code, id_token: idToken }),
+          body: JSON.stringify({
+            code,
+            codeVerifier,
+            id_token: idToken,
+          }),
         })
 
         if (!res.ok) {
@@ -43,6 +56,9 @@ export default function AuthCallbackPage() {
           }
           return
         }
+
+        sessionStorage.removeItem('oauth_state')
+        sessionStorage.removeItem('code_verifier')
 
         if (!aborted) {
           router.replace('/account?mode=login&success=shopify-auth')
