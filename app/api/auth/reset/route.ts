@@ -28,6 +28,7 @@ const RECOVER_MUTATION = /* gql */ `
 `
 
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now()
   const genericOk = NextResponse.json({
     ok: true,
     message:
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
       console.error('[auth/reset] customerRecover userErrors', {
         email: normalizedEmail,
         errors,
+        elapsedMs: Date.now() - startedAt,
       })
       // Manteniamo risposta generica anche in errore per non esporre esistenza account.
       return genericOk
@@ -77,6 +79,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[auth/reset] customerRecover accepted', {
       email: normalizedEmail,
+      elapsedMs: Date.now() - startedAt,
     })
 
     return genericOk
