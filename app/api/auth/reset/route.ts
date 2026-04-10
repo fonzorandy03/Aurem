@@ -75,6 +75,11 @@ export async function POST(req: NextRequest) {
           { status: 404 },
         )
       }
+
+      console.log('[auth/reset] customer found', {
+        email: normalizedEmail,
+        state: customer.state,
+      })
     } catch (err) {
       // Se Admin API fallisce, ritorna generico
       return NextResponse.json(
