@@ -103,11 +103,21 @@ export async function POST(req: NextRequest) {
     if (userErrors && userErrors.length > 0) {
       const firstError = userErrors[0]
       const code = firstError.code?.toUpperCase()
+      const message = firstError.message?.toLowerCase() ?? ''
 
-      if (code === 'EXPIRED_TOKEN' || code === 'INVALID_TOKEN') {
+      if (
+        code === 'EXPIRED_TOKEN' ||
+        code === 'INVALID_TOKEN' ||
+        code === 'INVALID' ||
+        code === 'NOT_FOUND' ||
+        message.includes('invalid') ||
+        message.includes('expired') ||
+        message.includes('not found') ||
+        message.includes('unidentified customer')
+      ) {
         return NextResponse.json(
           {
-            error: code,
+            error: code === 'EXPIRED_TOKEN' ? 'EXPIRED_TOKEN' : 'INVALID_TOKEN',
             message: 'Link di reset scaduto o non valido.',
           },
           { status: 400 },

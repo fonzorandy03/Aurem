@@ -129,19 +129,19 @@ export default function ResetPasswordPage() {
         })
 
         if (!res.ok) {
-          const { error } = await res.json()
+          const { error, message } = await res.json()
 
           if (error === 'EXPIRED_TOKEN') {
             setState('expired')
-            setErrors({ general: 'Il link di reset è scaduto.' })
-          } else if (error === 'INVALID_TOKEN') {
+            setErrors({ general: message || 'Il link di reset e scaduto.' })
+          } else if (error === 'INVALID_TOKEN' || error === 'INVALID' || error === 'NOT_FOUND') {
             setState('expired')
-            setErrors({ general: 'Link non valido.' })
+            setErrors({ general: message || 'Link non valido o gia usato. Richiedi un nuovo link di reset.' })
           } else {
             setState('error')
             setErrors({
               general:
-                error ?? 'Errore durante il reset della password. Riprova.',
+                message ?? 'Errore durante il reset della password. Riprova.',
             })
           }
           return
