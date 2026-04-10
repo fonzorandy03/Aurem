@@ -3,6 +3,9 @@
 /** Nome del cookie HTTP-only che contiene il token Shopify */
 export const CUSTOMER_TOKEN_COOKIE = 'aurem_customer_token'
 
+/** Cookie HTTP-only per token Customer Account API (new Shopify accounts). */
+export const CUSTOMER_ACCOUNT_ID_TOKEN_COOKIE = 'aurem_customer_account_id_token'
+
 /** Cookie (non HTTP-only) con country ISO-2 del cliente per pricing market-aware */
 export const CUSTOMER_COUNTRY_COOKIE = 'aurem_country_code'
 
