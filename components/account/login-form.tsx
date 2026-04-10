@@ -285,6 +285,15 @@ export function LoginForm() {
       setMode('login')
       setSuccess('Password successfully reset. You can now sign in with your new password.')
     }
+    if (searchParams.get('success') === 'shopify-auth') {
+      setMode('login')
+      setSuccess('Verification completed on Shopify. Please sign in to continue on AUREM.')
+    }
+    const callbackError = searchParams.get('callback_error')
+    if (callbackError) {
+      setMode('login')
+      setError('Shopify authentication did not complete. Please try again.')
+    }
     // Handle mode parameter
     const modeParam = searchParams.get('mode')
     if (modeParam === 'reset' || modeParam === 'register') {
