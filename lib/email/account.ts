@@ -4,19 +4,28 @@ type SendAccountWelcomeEmailResult =
   | { status: 'sent'; id?: string }
   | { status: 'skipped'; reason: string }
 
-const resendApiKey = process.env.RESEND_API_KEY
-const fromEmail = process.env.AUTH_FROM_EMAIL ?? process.env.NEWSLETTER_FROM_EMAIL
-
-const resend = resendApiKey ? new Resend(resendApiKey) : null
-
 export async function sendAccountWelcomeEmail(email: string, firstName?: string | null): Promise<SendAccountWelcomeEmailResult> {
-  if (!resend) {
+  const resendApiKey = process.env.RESEND_API_KEY
+  const fromEmail = process.env.AUTH_FROM_EMAIL ?? process.env.NEWSLETTER_FROM_EMAIL
+
+  console.log('[sendAccountWelcomeEmail] config check', {
+    hasResendKey: !!resendApiKey,
+    hasFromEmail: !!fromEmail,
+    fromEmail: fromEmail || 'NOT_SET',
+    to: email,
+  })
+
+  if (!resendApiKey) {
+    console.log('[sendAccountWelcomeEmail] skipped: RESEND_API_KEY not configured')
     return { status: 'skipped', reason: 'RESEND_API_KEY not configured' }
   }
 
   if (!fromEmail) {
+    console.log('[sendAccountWelcomeEmail] skipped: AUTH_FROM_EMAIL / NEWSLETTER_FROM_EMAIL not configured')
     return { status: 'skipped', reason: 'AUTH_FROM_EMAIL / NEWSLETTER_FROM_EMAIL not configured' }
   }
+
+  const resend = new Resend(resendApiKey)
 
   const safeName = firstName?.trim() || 'there'
   const subject = 'Welcome to AUREM'
@@ -35,6 +44,8 @@ export async function sendAccountWelcomeEmail(email: string, firstName?: string 
     </div>
   `
 
+  console.log('[sendAccountWelcomeEmail] sending email...', { from: fromEmail, to: email, subject })
+
   const { data, error } = await resend.emails.send({
     from: fromEmail,
     to: email,
@@ -44,8 +55,10 @@ export async function sendAccountWelcomeEmail(email: string, firstName?: string 
   })
 
   if (error) {
+    console.error('[sendAccountWelcomeEmail] Resend error:', error)
     throw new Error(`Resend error: ${error.message}`)
   }
 
+  console.log('[sendAccountWelcomeEmail] success', { id: data?.id, to: email })
   return { status: 'sent', id: data?.id }
 }
