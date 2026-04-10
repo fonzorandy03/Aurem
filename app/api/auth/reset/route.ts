@@ -94,6 +94,17 @@ export async function POST(req: NextRequest) {
 
     const errors = data.customerRecover?.customerUserErrors
     if (errors?.length) {
+      console.error('[auth/reset] customerRecover userErrors', {
+        email: normalizedEmail,
+        errors,
+      })
+    } else {
+      console.log('[auth/reset] customerRecover accepted', {
+        email: normalizedEmail,
+      })
+    }
+
+    if (errors?.length) {
       return NextResponse.json(
         {
           error: 'RESET_FAILED',
