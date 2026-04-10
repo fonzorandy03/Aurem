@@ -131,7 +131,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
-  resetPassword: (email: string) => Promise<void>
+  resetPassword: (email: string) => Promise<string>
   logout: () => Promise<void>
   refresh: () => Promise<void>
   refreshWithOrders: () => Promise<void>
@@ -281,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ─── Reset password ─────────────────────────────────────────────────────
 
-  const resetPassword = useCallback(async (email: string) => {
+  const resetPassword = useCallback(async (email: string): Promise<string> => {
     const res = await fetch('/api/auth/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -290,9 +290,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     if (!res.ok) {
-      const { error } = await res.json()
-      throw new Error(error ?? 'Invio email non riuscito.')
+      const { error, message } = await res.json()
+      throw new Error(message ?? error ?? 'Errore durante l\'invio del link di reset.')
     }
+
+    const { message } = await res.json()
+    return message ?? 'Email inviata. Controlla la inbox.'
   }, [])
 
   // ─── Logout ─────────────────────────────────────────────────────────────

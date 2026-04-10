@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/components/account/auth-context'
 import {
@@ -258,6 +259,7 @@ function SelectField({
 
 export function LoginForm() {
   const { login, register, resetPassword } = useAuth()
+  const searchParams = useSearchParams()
   const postalLookupAbortRef = useRef<AbortController | null>(null)
 
   const [mode, setMode]             = useState<Mode>('login')
@@ -276,6 +278,19 @@ export function LoginForm() {
   const [isLoading, setIsLoading]   = useState(false)
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState('')
+
+  // Handle password reset success redirect
+  useEffect(() => {
+    if (searchParams.get('success') === 'reset') {
+      setMode('login')
+      setSuccess('Password successfully reset. You can now sign in with your new password.')
+    }
+    // Handle mode parameter
+    const modeParam = searchParams.get('mode')
+    if (modeParam === 'reset' || modeParam === 'register') {
+      setMode(modeParam as Mode)
+    }
+  }, [searchParams])
 
   const subdivisions = useMemo(() => getSubdivisions(countryCode), [countryCode])
   const filteredSubdivisions = useMemo(
@@ -388,8 +403,9 @@ export function LoginForm() {
 
         await register(validation.data)
       } else {
-        await resetPassword(email)
-        setSuccess('Email sent. Please check your inbox.')
+        // Reset password — resetPassword now returns success message
+        const successMsg = await resetPassword(email)
+        setSuccess(successMsg)
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Si è verificato un errore. Riprova.')

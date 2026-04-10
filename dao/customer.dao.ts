@@ -19,23 +19,10 @@ const CUSTOMER_FRAGMENT = /* gql */ `
     lastName
     email
     phone
-    acceptsMarketing
     tags
     state
-    ordersCount
-    totalSpentV2 { amount currencyCode }
     createdAt
     updatedAt
-    addresses(first: 10) {
-      edges {
-        node {
-          id
-          firstName lastName company
-          address1 address2
-          city province country zip phone
-        }
-      }
-    }
     defaultAddress {
       id firstName lastName company
       address1 address2
@@ -53,12 +40,12 @@ function mapCustomer(node: any): Customer {
     lastName: node.lastName ?? null,
     email: node.email,
     phone: node.phone ?? null,
-    acceptsMarketing: node.acceptsMarketing,
+    acceptsMarketing: false,
     tags: node.tags ?? [],
     state: node.state,
-    ordersCount: node.ordersCount ?? 0,
-    totalSpent: node.totalSpentV2 ?? { amount: '0', currencyCode: 'EUR' },
-    addresses: (node.addresses?.edges ?? []).map((e: any) => e.node),
+    ordersCount: 0,
+    totalSpent: { amount: '0', currencyCode: 'EUR' },
+    addresses: [],
     defaultAddress: node.defaultAddress ?? null,
     createdAt: node.createdAt,
     updatedAt: node.updatedAt,
