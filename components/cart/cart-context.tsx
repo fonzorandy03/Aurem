@@ -21,6 +21,7 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | null>(null)
 
 const CART_ID_KEY = 'aurem_cart_id'
+const CART_COUNTRY_KEY = 'aurem_cart_country'
 
 /** Try to associate the cart with the logged-in customer (best-effort, non-blocking) */
 function tryAssociateCart(cartId: string) {
@@ -47,6 +48,35 @@ function setStoredCartId(id: string) {
 /** Safely remove from localStorage */
 function removeStoredCartId() {
   try { typeof window !== 'undefined' && window.localStorage.removeItem(CART_ID_KEY) } catch {}
+}
+
+function readCountryCookie(): string | null {
+  if (typeof document === 'undefined') return null
+  const cookieKey = 'aurem_country_code='
+  const hit = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(cookieKey))
+  return hit ? decodeURIComponent(hit.slice(cookieKey.length)) : null
+}
+
+function getStoredCartCountry(): string | null {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage.getItem(CART_COUNTRY_KEY) : null
+  } catch {
+    return null
+  }
+}
+
+function setStoredCartCountry(countryCode: string | null) {
+  try {
+    if (typeof window === 'undefined') return
+    if (countryCode) {
+      window.localStorage.setItem(CART_COUNTRY_KEY, countryCode)
+    } else {
+      window.localStorage.removeItem(CART_COUNTRY_KEY)
+    }
+  } catch {}
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -78,6 +108,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Load existing cart on mount
   useEffect(() => {
+    const cookieCountry = readCountryCookie()
+    const cartCountry = getStoredCartCountry()
+
+    if (cartCountry && cookieCountry && cartCountry !== cookieCountry) {
+      removeStoredCartId()
+      setStoredCartCountry(cookieCountry)
+      setCart(null)
+      cartRef.current = null
+      return
+    }
+
     const cartId = getStoredCartId()
     if (!cartId) return
     getCart(cartId)
@@ -90,14 +131,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
               edges: existingCart.lines.edges.filter((e) => e.node.quantity > 0),
             },
           }
+          setStoredCartCountry(cookieCountry)
           setCart(cleaned)
           tryAssociateCart(existingCart.id)
         } else {
           removeStoredCartId()
+          setStoredCartCountry(null)
         }
       })
       .catch(() => {
         removeStoredCartId()
+        setStoredCartCountry(null)
       })
   }, [])
 
@@ -107,6 +151,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const url = new URL(window.location.href)
     if (url.searchParams.has('checkout_complete') || url.pathname.includes('/thank-you')) {
       removeStoredCartId()
+      setStoredCartCountry(null)
       cartRef.current = null
       setCart(null)
     }
@@ -115,6 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /** Recover from expired cart — creates a fresh cart and notifies user */
   const handleExpiredCart = useCallback(() => {
     removeStoredCartId()
+    setStoredCartCountry(null)
     cartRef.current = null
     setCart(null)
     toast.error('Your cart expired', { description: 'Please add items again.' })
@@ -124,6 +170,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const freshCart = useCallback(async (): Promise<ShopifyCart> => {
     const newCart = await createCart()
     setStoredCartId(newCart.id)
+    setStoredCartCountry(readCountryCookie())
     cartRef.current = newCart
     setCart(newCart)
     return newCart
@@ -234,6 +281,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /** Clear cart state (used after checkout or manual reset) */
   const clearCart = useCallback(() => {
     removeStoredCartId()
+    setStoredCartCountry(null)
     cartRef.current = null
     setCart(null)
   }, [])

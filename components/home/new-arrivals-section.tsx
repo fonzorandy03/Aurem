@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import { fadeUp, staggerContainer, staggerItem, viewportOnce, imageHover, hoverLift } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { ShopifyProduct } from '@/lib/shopify/types'
+import { formatMoney } from '@/lib/shopify/format-money'
 
 interface ArrivalItem {
   id: string | number
@@ -47,11 +48,11 @@ const demoArrivals: ArrivalItem[] = [
 
 function shopifyToArrival(product: ShopifyProduct): ArrivalItem {
   const images = product.images.edges.map(e => e.node.url)
-  const amount = parseFloat(product.priceRange.minVariantPrice.amount)
+  const minPrice = product.priceRange.minVariantPrice
   return {
     id: product.id,
     name: product.title,
-    price: amount.toLocaleString('it-IT', { minimumFractionDigits: 2 }),
+    price: formatMoney(minPrice.amount, minPrice.currencyCode),
     modelImage: images[0] || '/images/model-1.jpg',
     flatImage: images[1] || images[0] || '/images/flat-1.jpg',
     href: `/product/${product.handle}`,
@@ -176,7 +177,7 @@ export function NewArrivalsSection({ products }: { products?: ShopifyProduct[] }
                   {/* Product Info - refined spacing */}
                   <div>
                     <p className="text-[13px] font-bold tracking-[0.1em] text-foreground leading-none">
-                      {item.price}&euro;
+                      {item.price}
                     </p>
                     <p className="text-[10px] tracking-[0.14em] uppercase text-foreground/40 mt-2.5 link-underline">
                       {item.name}

@@ -14,7 +14,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
-import { CUSTOMER_TOKEN_COOKIE } from '@/lib/auth/constants'
+import { CUSTOMER_COUNTRY_COOKIE, CUSTOMER_TOKEN_COOKIE } from '@/lib/auth/constants'
+import { resolveMarketFromValues } from '@/lib/shopify/pricing-country'
 
 const GET_CUSTOMER_EMAIL = /* gql */ `
   query getCustomerEmail($token: String!) {
@@ -73,7 +74,15 @@ export async function POST(req: NextRequest) {
     // Attach both customerAccessToken and email to the buyer identity.
     // With both set, Shopify definitively links the resulting order to
     // the correct customer account rather than treating it as a guest order.
-    const buyerIdentity: Record<string, string> = { customerAccessToken: token }
+    const { countryCode } = resolveMarketFromValues({
+      cookieCountryCode: req.cookies.get(CUSTOMER_COUNTRY_COOKIE)?.value,
+      getHeader: (headerName) => req.headers.get(headerName),
+    })
+
+    const buyerIdentity: Record<string, string> = {
+      customerAccessToken: token,
+      countryCode,
+    }
     if (email) buyerIdentity.email = email
 
     const { data } = await storefrontFetch<any>({

@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { staggerContainer, staggerItem, imageHover, hoverLift } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import type { ShopifyProduct } from '@/lib/shopify/types'
+import { formatMoney } from '@/lib/shopify/format-money'
 
 /* ─── Demo catalogue ──────────────────────────────────────────────────────────
  * Used when Shopify collection is empty. Maps to actual /public/images.
@@ -121,9 +122,11 @@ function ShopifyProductCard({ product, index }: {
   const image = product.images.edges[0]?.node
   const secondImage = product.images.edges[1]?.node
   const price = parseFloat(product.priceRange.minVariantPrice.amount)
+  const minPrice = product.priceRange.minVariantPrice
   const compareAt = product.compareAtPriceRange?.minVariantPrice
     ? parseFloat(product.compareAtPriceRange.minVariantPrice.amount)
     : null
+  const compareAtPrice = product.compareAtPriceRange?.minVariantPrice ?? null
   const isOnSale = !!(compareAt && compareAt > price)
   const category = product.productType || product.category?.name
 
@@ -191,11 +194,11 @@ function ShopifyProductCard({ product, index }: {
               'text-[11px] font-semibold tracking-[0.06em] leading-none',
               isOnSale ? 'text-destructive' : 'text-foreground'
             )}>
-              €{price.toFixed(2).replace('.', ',')}
+              {formatMoney(minPrice.amount, minPrice.currencyCode)}
             </p>
-            {isOnSale && compareAt && (
+            {isOnSale && compareAtPrice && (
               <p className="text-[10px] tracking-[0.06em] text-foreground/30 line-through leading-none">
-                €{compareAt.toFixed(2).replace('.', ',')}
+                {formatMoney(compareAtPrice.amount, compareAtPrice.currencyCode)}
               </p>
             )}
           </div>

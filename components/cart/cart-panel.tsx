@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
 import { isValidCheckoutUrl } from '@/lib/shopify/is-valid-checkout-url'
+import { formatMoney } from '@/lib/shopify/format-money'
 
 // ── Stock alert modal ─────────────────────────────────────────────────────────
 type StockAlert = { available: number | null }
@@ -223,7 +224,7 @@ export function CartPanel() {
                   {lines.map((line, idx) => {
                     const image = line.merchandise.product?.images.edges[0]?.node
                     const variantLabel = line.merchandise.title !== 'Default Title' ? line.merchandise.title : null
-                    const linePrice = (parseFloat(line.merchandise.price.amount) * line.quantity).toFixed(2)
+                    const linePriceAmount = parseFloat(line.merchandise.price.amount) * line.quantity
 
                     return (
                       <motion.div
@@ -305,13 +306,16 @@ export function CartPanel() {
                             {/* Animated line price */}
                             <AnimatePresence mode="wait" initial={false}>
                               <motion.p
-                                key={linePrice}
+                                key={`${linePriceAmount}:${line.merchandise.price.currencyCode}`}
                                 initial={{ opacity: 0, y: -4 }}
                                 animate={{ opacity: 1, y: 0, transition: { duration: 0.18, ease: ease.sharp } }}
                                 exit={{ opacity: 0, y: 4, transition: { duration: 0.1 } }}
                                 className="text-xs font-bold tracking-industrial tabular-nums"
                               >
-                                {linePrice}&euro;
+                                {formatMoney(
+                                  linePriceAmount,
+                                  line.merchandise.price.currencyCode,
+                                )}
                               </motion.p>
                             </AnimatePresence>
                           </div>
@@ -335,13 +339,15 @@ export function CartPanel() {
                     <span className="text-xs tracking-wide-industrial uppercase text-muted-foreground">Total</span>
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span
-                        key={total?.amount}
+                        key={`${total?.amount ?? ''}:${total?.currencyCode ?? ''}`}
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0, transition: { duration: 0.2, ease: ease.sharp } }}
                         exit={{ opacity: 0 }}
                         className="text-sm font-bold tracking-industrial tabular-nums"
                       >
-                        {total ? `${parseFloat(total.amount).toFixed(2)}\u20AC` : '0.00\u20AC'}
+                        {total
+                          ? formatMoney(total.amount, total.currencyCode)
+                          : formatMoney(0, 'EUR')}
                       </motion.span>
                     </AnimatePresence>
                   </div>

@@ -176,6 +176,7 @@ export function Header() {
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
         pathname={pathname}
+        isAuthenticated={isAuthenticated}
         onMyOrdersClick={handleMyOrdersNavigation}
       />
     </>
@@ -190,11 +191,13 @@ function FullscreenMenu({
   menuOpen,
   setMenuOpen,
   pathname,
+  isAuthenticated,
   onMyOrdersClick,
 }: {
   menuOpen: boolean
   setMenuOpen: (v: boolean) => void
   pathname: string
+  isAuthenticated: boolean
   onMyOrdersClick: () => void
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -395,12 +398,14 @@ function FullscreenMenu({
               >
                 Home
               </Link>
-              <button
-                onClick={onMyOrdersClick}
-                className="text-[10px] tracking-[0.18em] uppercase text-foreground/35 hover:text-foreground transition-colors duration-200 link-underline"
-              >
-                My Orders
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={onMyOrdersClick}
+                  className="text-[10px] tracking-[0.18em] uppercase text-foreground/35 hover:text-foreground transition-colors duration-200 link-underline"
+                >
+                  My Orders
+                </button>
+              )}
               <Link
                 href="/about"
                 onClick={() => setMenuOpen(false)}

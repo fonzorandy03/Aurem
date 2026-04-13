@@ -85,6 +85,26 @@ function getPricingCountryContext(countryCode?: string): {
   }
 }
 
+function getCountryCodeFromClientCookie(): string | undefined {
+  if (typeof document === 'undefined') return undefined
+
+  const cookieKey = 'aurem_country_code='
+  const hit = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(cookieKey))
+
+  if (!hit) return undefined
+
+  const value = decodeURIComponent(hit.slice(cookieKey.length))
+  const normalized = normalizeCountryCode(value)
+  return normalized && getCountryByCode(normalized) ? normalized : undefined
+}
+
+function getRuntimePricingCountryContext(countryCode?: string) {
+  return getPricingCountryContext(countryCode ?? getCountryCodeFromClientCookie())
+}
+
 // Normalize raw Shopify product (variants come as edges from GraphQL)
 type RawShopifyProduct = Omit<ShopifyProduct, 'variants'> & {
   variants: { edges: Array<{ node: ShopifyProduct['variants'][number] }> } | ShopifyProduct['variants']
@@ -446,9 +466,11 @@ export async function getCollectionProducts({
 
 // Create cart
 export async function createCart(): Promise<ShopifyCart> {
+  const pricingCountry = getRuntimePricingCountryContext()
+
   const query = /* gql */ `
-    mutation cartCreate {
-      cartCreate {
+    mutation cartCreate($buyerIdentity: CartBuyerIdentityInput${pricingCountry.variableDefinition})${pricingCountry.directive} {
+      cartCreate(buyerIdentity: $buyerIdentity) {
         cart {
           id
           lines(first: 100) {
@@ -502,7 +524,15 @@ export async function createCart(): Promise<ShopifyCart> {
       cart: ShopifyCart
       userErrors: Array<{ field: string; message: string }>
     }
-  }>({ query })
+  }>({
+    query,
+    variables: {
+      ...pricingCountry.variables,
+      buyerIdentity: pricingCountry.variables.country
+        ? { countryCode: pricingCountry.variables.country }
+        : null,
+    },
+  })
 
   if (data.cartCreate.userErrors.length > 0) {
     throw new Error(data.cartCreate.userErrors[0].message)
@@ -516,8 +546,10 @@ export async function addCartLines(
   cartId: string,
   lines: Array<{ merchandiseId: string; quantity: number }>,
 ): Promise<ShopifyCart> {
+  const pricingCountry = getRuntimePricingCountryContext()
+
   const query = /* gql */ `
-    mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!${pricingCountry.variableDefinition})${pricingCountry.directive} {
       cartLinesAdd(cartId: $cartId, lines: $lines) {
         cart {
           id
@@ -577,6 +609,7 @@ export async function addCartLines(
     variables: {
       cartId,
       lines,
+      ...pricingCountry.variables,
     },
   })
 
@@ -592,8 +625,10 @@ export async function updateCartLines(
   cartId: string,
   lines: Array<{ id: string; quantity: number }>,
 ): Promise<ShopifyCart> {
+  const pricingCountry = getRuntimePricingCountryContext()
+
   const query = /* gql */ `
-    mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+    mutation cartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!${pricingCountry.variableDefinition})${pricingCountry.directive} {
       cartLinesUpdate(cartId: $cartId, lines: $lines) {
         cart {
           id
@@ -653,6 +688,7 @@ export async function updateCartLines(
     variables: {
       cartId,
       lines,
+      ...pricingCountry.variables,
     },
   })
 
@@ -668,8 +704,10 @@ export async function removeCartLines(
   cartId: string,
   lineIds: string[],
 ): Promise<ShopifyCart> {
+  const pricingCountry = getRuntimePricingCountryContext()
+
   const query = /* gql */ `
-    mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+    mutation cartLinesRemove($cartId: ID!, $lineIds: [ID!]!${pricingCountry.variableDefinition})${pricingCountry.directive} {
       cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
         cart {
           id
@@ -729,6 +767,7 @@ export async function removeCartLines(
     variables: {
       cartId,
       lineIds,
+      ...pricingCountry.variables,
     },
   })
 
@@ -741,8 +780,10 @@ export async function removeCartLines(
 
 // Get cart
 export async function getCart(cartId: string): Promise<ShopifyCart | null> {
+  const pricingCountry = getRuntimePricingCountryContext()
+
   const query = /* gql */ `
-    query getCart($cartId: ID!) {
+    query getCart($cartId: ID!${pricingCountry.variableDefinition})${pricingCountry.directive} {
       cart(id: $cartId) {
         id
         lines(first: 100) {
@@ -803,7 +844,10 @@ export async function getCart(cartId: string): Promise<ShopifyCart | null> {
     cart: ShopifyCart | null
   }>({
     query,
-    variables: { cartId },
+    variables: {
+      cartId,
+      ...pricingCountry.variables,
+    },
   })
 
   return data.cart
@@ -814,6 +858,8 @@ export async function updateCartBuyerIdentity(
   cartId: string,
   customerAccessToken: string,
 ): Promise<ShopifyCart> {
+  const pricingCountry = getRuntimePricingCountryContext()
+
   const query = /* gql */ `
     mutation cartBuyerIdentityUpdate($cartId: ID!, $buyerIdentity: CartBuyerIdentityInput!) {
       cartBuyerIdentityUpdate(cartId: $cartId, buyerIdentity: $buyerIdentity) {
@@ -874,7 +920,12 @@ export async function updateCartBuyerIdentity(
     query,
     variables: {
       cartId,
-      buyerIdentity: { customerAccessToken },
+      buyerIdentity: {
+        customerAccessToken,
+        ...(pricingCountry.variables.country
+          ? { countryCode: pricingCountry.variables.country }
+          : {}),
+      },
     },
   })
 

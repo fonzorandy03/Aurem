@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { ShopifyProduct } from '@/lib/shopify/types'
 import { buildLoginRedirect } from '@/lib/auth/redirect'
+import { formatMoney } from '@/lib/shopify/format-money'
 
 interface DemoProduct {
   title: string
@@ -43,8 +44,11 @@ export function ProductDetail({ shopifyProduct, demo }: ProductDetailProps) {
   // Use Shopify product data if available, otherwise demo
   const title = shopifyProduct?.title || demo.title
   const price = shopifyProduct
-    ? `${parseFloat(shopifyProduct.priceRange.minVariantPrice.amount).toFixed(2).replace('.', ',')}`
-    : demo.price
+    ? formatMoney(
+      shopifyProduct.priceRange.minVariantPrice.amount,
+      shopifyProduct.priceRange.minVariantPrice.currencyCode,
+    )
+    : `${demo.price}\u20AC`
   const description = shopifyProduct?.description || demo.description
   const images = shopifyProduct
     ? shopifyProduct.images.edges.map(e => ({ url: e.node.url, alt: e.node.altText || title }))
@@ -245,7 +249,7 @@ export function ProductDetail({ shopifyProduct, demo }: ProductDetailProps) {
               {title}
             </h1>
             <p className="text-base tracking-industrial mt-3">
-              {price}&euro;
+              {price}
             </p>
 
             {/* ── All Shopify options: rendered in order, no option ever dropped ── */}

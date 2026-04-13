@@ -7,8 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getCountryByCode, normalizeCountryCode } from '@/lib/customer-market'
 import { CUSTOMER_COUNTRY_COOKIE } from '@/lib/auth/constants'
+import { resolveMarketFromValues } from '@/lib/shopify/pricing-country'
 import { storefrontFetch } from '@/lib/shopify/storefront-client'
 import {
   consumeRateLimit,
@@ -16,25 +16,11 @@ import {
   tooManyRequestsResponse,
 } from '@/lib/security/request-guard'
 
-const GEO_COUNTRY_HEADERS = ['x-vercel-ip-country', 'cf-ipcountry', 'x-country-code']
-
 function getSearchCountryCode(req: NextRequest): string | null {
-  const cookieCountry = normalizeCountryCode(
-    req.cookies.get(CUSTOMER_COUNTRY_COOKIE)?.value ?? '',
-  )
-
-  if (cookieCountry && getCountryByCode(cookieCountry)) {
-    return cookieCountry
-  }
-
-  for (const headerName of GEO_COUNTRY_HEADERS) {
-    const headerCountry = normalizeCountryCode(req.headers.get(headerName) ?? '')
-    if (headerCountry && getCountryByCode(headerCountry)) {
-      return headerCountry
-    }
-  }
-
-  return null
+  return resolveMarketFromValues({
+    cookieCountryCode: req.cookies.get(CUSTOMER_COUNTRY_COOKIE)?.value,
+    getHeader: (headerName) => req.headers.get(headerName),
+  }).countryCode
 }
 
 /* ─── In-memory cache ────────────────────────────────────────────────────── */

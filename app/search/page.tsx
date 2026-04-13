@@ -8,15 +8,14 @@ import { ShoppingBag, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { staggerContainer, staggerItem, fadeUp } from '@/lib/motion'
 import type { SearchProduct } from '@/app/api/search/route'
+import { formatMoney } from '@/lib/shopify/format-money'
 
 /* ─── Price formatter ───────────────────────────────────────────────────── */
 function fmt(amount: string, currency: string) {
-  return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: currency ?? 'EUR',
+  return formatMoney(amount, currency, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(parseFloat(amount))
+  })
 }
 
 /* ─── Filter pill ────────────────────────────────────────────────────────── */

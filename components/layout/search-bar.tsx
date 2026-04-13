@@ -19,16 +19,15 @@ import { Search, X, Loader2, ShoppingBag } from 'lucide-react'
 import { searchSlideDown } from '@/lib/motion'
 import { useSearch } from '@/hooks/use-search'
 import type { SearchProduct } from '@/hooks/use-search'
+import { formatMoney } from '@/lib/shopify/format-money'
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
 
 function fmt(amount: string, currency: string) {
-  return new Intl.NumberFormat('it-IT', {
-    style:    'currency',
-    currency: currency ?? 'EUR',
+  return formatMoney(amount, currency, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(parseFloat(amount))
+  })
 }
 
 /** Wraps matching substrings in <mark> */
