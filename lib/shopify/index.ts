@@ -467,10 +467,13 @@ export async function getCollectionProducts({
 // Create cart
 export async function createCart(): Promise<ShopifyCart> {
   const pricingCountry = getRuntimePricingCountryContext()
+  const mutationVariableSignature = pricingCountry.variableDefinition
+    ? '($country: CountryCode!)'
+    : ''
 
   const query = /* gql */ `
-    mutation cartCreate($buyerIdentity: CartBuyerIdentityInput${pricingCountry.variableDefinition})${pricingCountry.directive} {
-      cartCreate(buyerIdentity: $buyerIdentity) {
+    mutation cartCreate${mutationVariableSignature}${pricingCountry.directive} {
+      cartCreate {
         cart {
           id
           lines(first: 100) {
@@ -528,9 +531,6 @@ export async function createCart(): Promise<ShopifyCart> {
     query,
     variables: {
       ...pricingCountry.variables,
-      buyerIdentity: pricingCountry.variables.country
-        ? { countryCode: pricingCountry.variables.country }
-        : null,
     },
   })
 
