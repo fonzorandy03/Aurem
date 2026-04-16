@@ -125,7 +125,8 @@ export function AccountDashboard() {
   }, [customer.defaultAddress?.id])
 
   async function handleAddressSave() {
-    if (!customer.defaultAddress?.id) return
+    const currentCustomer = customer
+    if (!currentCustomer?.defaultAddress?.id) return
 
     if (!addressForm.address1 || !addressForm.city || !addressForm.zip || !addressForm.country) {
       setAddressError('Address, city, ZIP and country are required.')
@@ -139,9 +140,9 @@ export function AccountDashboard() {
 
     try {
       await updateDefaultAddress({
-        addressId: customer.defaultAddress.id,
-        firstName: customer.firstName ?? undefined,
-        lastName: customer.lastName ?? undefined,
+        addressId: currentCustomer.defaultAddress.id,
+        firstName: currentCustomer.firstName ?? undefined,
+        lastName: currentCustomer.lastName ?? undefined,
         address1: addressForm.address1,
         address2: addressForm.address2 || undefined,
         city: addressForm.city,
