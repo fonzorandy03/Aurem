@@ -122,6 +122,19 @@ export interface RegisterInput {
   province?: string
 }
 
+export interface UpdateDefaultAddressInput {
+  addressId: string
+  address1: string
+  address2?: string
+  city: string
+  province?: string
+  zip: string
+  country: string
+  phone?: string
+  firstName?: string
+  lastName?: string
+}
+
 interface AuthState {
   customer: CustomerProfile | null
   isLoading: boolean
@@ -131,6 +144,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
+  updateDefaultAddress: (input: UpdateDefaultAddressInput) => Promise<void>
   resetPassword: (email: string) => Promise<string>
   logout: () => Promise<void>
   refresh: () => Promise<void>
@@ -279,6 +293,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [getPostAuthRedirectPath, refresh, router],
   )
 
+  const updateDefaultAddress = useCallback(
+    async (input: UpdateDefaultAddressInput) => {
+      const res = await fetch('/api/auth/address/default', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+        credentials: 'same-origin',
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: null }))
+        throw new Error(error ?? 'Unable to update default address.')
+      }
+
+      await refreshWithOrders()
+    },
+    [refreshWithOrders],
+  )
+
   // ─── Reset password ─────────────────────────────────────────────────────
 
   const resetPassword = useCallback(async (email: string): Promise<string> => {
@@ -311,7 +344,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, register, resetPassword, logout, refresh, refreshWithOrders }}
+      value={{ ...state, login, register, updateDefaultAddress, resetPassword, logout, refresh, refreshWithOrders }}
     >
       {children}
     </AuthContext.Provider>
